@@ -1,3 +1,4 @@
+#include "core_pins.h"
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
 #include <actuator.h>
@@ -56,6 +57,10 @@ IIRFilter engine_rpm_derror_filter(ENGINE_RPM_DERROR_FILTER_B,
                                    ENGINE_RPM_DERROR_FILTER_A,
                                    ENGINE_RPM_DERROR_FILTER_M,
                                    ENGINE_RPM_DERROR_FILTER_N);
+IIRFilter gear_rpm_time_filter(GEAR_RPM_TIME_FILTER_B, GEAR_RPM_TIME_FILTER_A,
+                               GEAR_RPM_TIME_FILTER_M, GEAR_RPM_TIME_FILTER_N);
+IIRFilter throttle_fitler(THROTTLE_FILTER_B, THROTTLE_FILTER_A,
+                          THROTTLE_FILTER_M, THROTTLE_FILTER_N);
 
 MedianFilter engine_rpm_median_filter(ENGINE_RPM_MEDIAN_FILTER_WINDOW);
 
@@ -74,8 +79,11 @@ u32 last_sample_engine_time_us = 0;
 
 volatile u32 gear_count = 0;
 volatile u32 gear_time_diff_us = 0;
-volatile float filt_gear_time_diff_us = 0;
+volatile float last_gear_time_diff_us = 0;
 u32 last_gear_time_us = 0;
+u32 last_sample_gear_time_us = 0;
+
+float last_throttle = 0.0;
 
 float last_engine_rpm_error = 0;
 
@@ -179,13 +187,18 @@ u8 write_to_double_buffer(u8 data[], size_t data_length,
   return DOUBLE_BUFFER_SUCCESS;
 }
 
+// TODO: Fix filtered engine spikes
 void on_engine_sensor() {
   u32 cur_time_us = micros();
   if (cur_time_us - last_engine_time_us > ENGINE_COUNT_MINIMUM_TIME_MS) {
     if (engine_count % ENGINE_SAMPLE_WINDOW == 0) {
       engine_time_diff_us = cur_time_us - last_sample_engine_time_us;
-      filt_engine_time_diff_us =
-          engine_rpm_rotation_filter.update(engine_time_diff_us);
+      if (engine_time_diff_us > 12000) {
+        filt_engine_time_diff_us = engine_time_diff_us;
+      } else {
+        filt_engine_time_diff_us =
+            engine_rpm_rotation_filter.update(engine_time_diff_us);
+      }
 
       last_sample_engine_time_us = cur_time_us;
     }
@@ -196,11 +209,16 @@ void on_engine_sensor() {
 
 void on_geartooth_sensor() {
   u32 cur_time_us = micros();
-  if (gear_count % GEAR_SAMPLE_WINDOW == 0) {
-    gear_time_diff_us = cur_time_us - last_gear_time_us;
-    last_gear_time_us = cur_time_us;
+  if (cur_time_us - last_gear_time_us > GEAR_COUNT_MINIMUM_TIME_MS) {
+    if (gear_count % GEAR_SAMPLE_WINDOW == 0) {
+      gear_time_diff_us = cur_time_us - last_sample_gear_time_us;
+
+      last_sample_gear_time_us = cur_time_us;
+    }
+    ++gear_count;
   }
-  ++gear_count;
+  last_gear_time_diff_us = gear_time_diff_us;
+  last_gear_time_us = cur_time_us;
 }
 
 void on_outbound_limit_switch() {
@@ -226,6 +244,25 @@ void control_function() {
   control_state = ControlFunctionState_init_default;
   control_state.cycle_start_us = micros();
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
+
+  control_state.raw_throttle = analogRead(THROTTLE_SENSOR_PIN);
+  control_state.raw_brake = analogRead(BRAKE_SENSOR_PIN);
+
+  control_state.throttle =
+      map_int_to_float(control_state.raw_throttle, THROTTLE_MIN_VALUE,
+                       THROTTLE_MAX_VALUE, 0.0, 1.0);
+  control_state.throttle = CLAMP(control_state.throttle, 0.0, 1.0);
+
+  control_state.brake = map_int_to_float(
+      control_state.raw_brake, BRAKE_MIN_VALUE, BRAKE_MAX_VALUE, 0.0, 1.0);
+  control_state.brake = CLAMP(control_state.brake, 0.0, 1.0);
+
+  control_state.throttle_filtered =
+      throttle_fitler.update(control_state.throttle);
+
+  control_state.d_throttle =
+      (control_state.throttle_filtered - last_throttle) / dt_s;
+  last_throttle = control_state.throttle_filtered;
 
   // Grab sensor data
   noInterrupts();
@@ -255,16 +292,32 @@ void control_function() {
   }
 
   float gear_rpm = 0.0;
+  float filt_gear_rpm = 0.0;
   if (gear_time_diff_us != 0) {
     gear_rpm = GEAR_SAMPLE_WINDOW / GEAR_COUNTS_PER_ROT /
                cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+    filt_gear_rpm = gear_rpm_time_filter.update(gear_rpm);
   }
 
   float wheel_rpm = gear_rpm * GEAR_TO_WHEEL_RATIO;
-  control_state.secondary_rpm = wheel_rpm * SECONDARY_TO_WHEEL_RATIO;
+  control_state.secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
+  control_state.filtered_secondary_rpm =
+      filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
+
+  float wheel_mph = control_state.filtered_secondary_rpm *
+                    WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
   // Controller
-  control_state.target_rpm = ENGINE_TARGET_RPM;
+  if (WHEEL_REF_ENABLED) {
+    control_state.target_rpm =
+        (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
+        WHEEL_REF_LOW_RPM;
+    control_state.target_rpm =
+        CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
+  } else {
+    control_state.target_rpm = ENGINE_TARGET_RPM;
+  }
+
   control_state.engine_rpm_error =
       control_state.filtered_engine_rpm - control_state.target_rpm;
 
@@ -277,20 +330,18 @@ void control_function() {
 
   control_state.velocity_mode = true;
 
+  /*
   control_state.velocity_command =
       control_state.engine_rpm_error * ACTUATOR_KP +
       MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD);
+      */
+  control_state.velocity_command =
+      control_state.engine_rpm_error * ACTUATOR_KP +
+      control_state.engine_rpm_derror * ACTUATOR_KD +
+      MAX(0, control_state.d_throttle * THROTTLE_KD);
 
-  // TODO: Move this logic to actuator ?
-  if (odrive.get_pos_estimate() < ACTUATOR_SLOW_INBOUND_REGION_ROT) {
-    control_state.velocity_command =
-        CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
-              ACTUATOR_SLOW_INBOUND_VEL);
-  } else {
-    control_state.velocity_command =
-        CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
-              ACTUATOR_FAST_INBOUND_VEL);
-  }
+  control_state.velocity_command = CLAMP(control_state.velocity_command,
+                                         -ODRIVE_VEL_LIMIT, ODRIVE_VEL_LIMIT);
 
   actuator.set_velocity(control_state.velocity_command);
 
@@ -324,6 +375,9 @@ void control_function() {
 
   control_state.velocity_estimate = odrive.get_vel_estimate();
   control_state.position_estimate = odrive.get_pos_estimate();
+
+  control_state.p_term = ACTUATOR_KP;
+  control_state.d_term = ACTUATOR_KD;
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
@@ -385,6 +439,10 @@ void debug_mode() {
 
 void setup() {
   // Pin setup
+  for (u8 pin = 0; pin < NUM_DIGITAL_PINS; pin++) {
+    pinMode(pin, OUTPUT);
+  }
+
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(LED_1_PIN, OUTPUT);
@@ -400,7 +458,7 @@ void setup() {
   pinMode(ENGINE_SENSOR_PIN, INPUT);
   pinMode(GEARTOOTH_SENSOR_PIN, INPUT);
 
-  pinMode(THROTTLE_POT_PIN, INPUT);
+  pinMode(THROTTLE_SENSOR_PIN, INPUT);
   pinMode(BRAKE_SENSOR_PIN, INPUT);
 
   pinMode(LIMIT_SWITCH_IN_PIN, INPUT);
@@ -519,6 +577,25 @@ void setup() {
   // TODO: Figure out proper ISR priority levels
   NVIC_SET_PRIORITY(IRQ_GPIO6789, 16);
   timer.priority(255);
+
+  OperationHeader operation_header;
+
+  operation_header.timestamp = now();
+  operation_header.clock_us = micros();
+  operation_header.controller_kp = ACTUATOR_KP;
+  operation_header.controller_kd = ACTUATOR_KD;
+  operation_header.target_rpm = ENGINE_TARGET_RPM;
+  operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
+  operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
+  operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
+  operation_header.wheel_ref_breakpoint_high_mph =
+      WHEEL_REF_BREAKPOINT_HIGH_MPH;
+
+  size_t message_length = encode_pb_message(
+      message_buffer, MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
+      &OperationHeader_msg, &operation_header);
+  size_t num_bytes_written = log_file.write(message_buffer, message_length);
+  log_file.flush();
 
   // Attach timer interrupt
   switch (operating_mode) {
