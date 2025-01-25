@@ -22,27 +22,27 @@ constexpr float FEET_PER_MILE = 5280.0; // feet / mile
 constexpr float INCH_PER_FEET = 12.0;   // inch / feet
 
 // Powertrain
-constexpr float ENGINE_COUNTS_PER_ROT = 16; // count / rot
-constexpr float GEAR_COUNTS_PER_ROT = 46;   // count / rot
+constexpr float ENGINE_COUNTS_PER_ROT = 16; // count / rot                     // [NEED TO UPDATE]
+constexpr float GEAR_COUNTS_PER_ROT = 46;   // count / rot                     // [NEED TO UPDATE]
 
 // NOTE: x_to_y ratio is how many rotations of x for 1 rotation of y
-constexpr float GEAR_TO_WHEEL_RATIO = 56.0 / 19.0;
-constexpr float GEAR_TO_SECONDARY_RATIO = 17.0 / 46.0;
-
-constexpr float SECONDARY_TO_WHEEL_RATIO =
+constexpr float GEAR_TO_WHEEL_RATIO = 56.0 / 19.0;                           // [NEED TO UPDATE]
+constexpr float GEAR_TO_SECONDARY_RATIO = 17.0 / 46.0;                        // [NEED TO UPDATE]
+ 
+constexpr float SECONDARY_TO_WHEEL_RATIO =                                   // [NEED TO UPDATE]
     ((46.0 / 17.0) * (56.0 / 19.0)); // ~7.975
 constexpr float WHEEL_TO_SECONDARY_RATIO =
-    (1.0 / SECONDARY_TO_WHEEL_RATIO); // ~0.1253
+    (1.0 / SECONDARY_TO_WHEEL_RATIO); // ~0.1253                            // [NEED TO UPDATE]
 
-constexpr float WHEEL_DIAMETER_INCH = 23.0; // inch
-constexpr float WHEEL_MPH_PER_RPM = (WHEEL_DIAMETER_INCH * M_PI) /
-                                    (FEET_PER_MILE * INCH_PER_FEET) *
-                                    MINUTES_PER_HOUR; // mph / rpm
+constexpr float WHEEL_DIAMETER_INCH = 23.0; // inch                        // [NEED TO UPDATE]
+constexpr float WHEEL_MPH_PER_RPM = (WHEEL_DIAMETER_INCH * M_PI) /       
+                                    (FEET_PER_MILE * INCH_PER_FEET) *    
+                                    MINUTES_PER_HOUR; // mph / rpm       
 
 constexpr u32 ENGINE_SAMPLE_WINDOW = 4;
 constexpr u32 GEAR_SAMPLE_WINDOW = 10;
 // ODrive
-constexpr u8 ODRIVE_NODE_ID = 0x3;
+constexpr u8 ODRIVE_NODE_ID = 0x3;                                           //[Update??]
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s
 constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A
 
@@ -211,27 +211,29 @@ constexpr size_t THROTTLE_FILTER_M = COUNT_OF(THROTTLE_FILTER_B);
 constexpr size_t THROTTLE_FILTER_N = COUNT_OF(THROTTLE_FILTER_A);
 
 // Teensy Pins
-constexpr u8 LED_1_PIN = 9;
-constexpr u8 LED_2_PIN = 8;
-constexpr u8 LED_3_PIN = 7;
-constexpr u8 LED_4_PIN = 28;
-constexpr u8 LED_5_PIN = 29;
+constexpr u8 LED_1_PIN = 7; // D0 on PCB
+constexpr u8 LED_2_PIN = 8; // D1 on PCB
+constexpr u8 LED_3_PIN = 9; // D2 on PCB
+constexpr u8 LED_4_PIN = 28; // D3 on PCB
+constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
-constexpr u8 LIMIT_SWITCH_IN_PIN = 27;
-constexpr u8 LIMIT_SWITCH_OUT_PIN = 25;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 26;
+constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
+constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
-constexpr u8 ENGINE_SENSOR_PIN = 15;
-constexpr u8 GEARTOOTH_SENSOR_PIN = 14;
+constexpr u8 ENGINE_SENSOR_PIN = 38; 
+constexpr u8 GEARTOOTH_SENSOR_PIN = 37; 
 
-constexpr u8 THROTTLE_SENSOR_PIN = 20;
-constexpr u8 BRAKE_SENSOR_PIN = 21;
+constexpr u8 THROTTLE_SENSOR_PIN = 40;
+constexpr u8 BRAKE_SENSOR_PIN = 39;
+
+// [Add front wheel speed sensors and centerlock sensors]
 
 // Flexcan
-constexpr u32 FLEXCAN_BAUD_RATE = 250000;
-constexpr u32 FLEXCAN_MAX_MAILBOX = 16;
+constexpr u32 FLEXCAN_BAUD_RATE = 250000;     //[UPDATE???]
+constexpr u32 FLEXCAN_MAX_MAILBOX = 16;      //[UPDATE???]
 
 // Logging
 // bytes_per_cycle * cycle_freq * time_to_flush_sd * safety_factor
