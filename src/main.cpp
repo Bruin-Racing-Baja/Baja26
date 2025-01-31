@@ -83,6 +83,18 @@ volatile float last_gear_time_diff_us = 0;
 u32 last_gear_time_us = 0;
 u32 last_sample_gear_time_us = 0;
 
+volatile u32 lw_gear_count = 0;
+volatile u32 lw_gear_time_diff_us = 0;
+volatile float lw_last_gear_time_diff_us = 0;
+u32 lw_last_gear_time_us = 0;
+u32 lw_last_sample_gear_time_us = 0;
+
+volatile u32 rw_gear_count = 0;
+volatile u32 rw_gear_time_diff_us = 0;
+volatile float rw_last_gear_time_diff_us = 0;
+u32 rw_last_gear_time_us = 0;
+u32 rw_last_sample_gear_time_us = 0;
+
 float last_throttle = 0.0;
 
 float last_engine_rpm_error = 0;
@@ -221,6 +233,34 @@ void on_geartooth_sensor() {
   last_gear_time_us = cur_time_us;
 }
 
+void on_lw_geartooth_sensor() {
+  u32 lw_cur_time_us = micros();
+  if (lw_cur_time_us - lw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+    if (gear_count % L_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
+      lw_gear_time_diff_us = lw_cur_time_us - lw_last_sample_gear_time_us;
+
+      lw_last_sample_gear_time_us = lw_cur_time_us;
+    }
+    ++lw_gear_count;
+  }
+  lw_last_gear_time_diff_us = lw_gear_time_diff_us;
+  lw_last_gear_time_us = lw_cur_time_us;
+}
+
+void on_rw_geartooth_sensor() {
+  u32 rw_cur_time_us = micros();
+  if (rw_cur_time_us - rw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+    if (rw_gear_count % R_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
+      rw_gear_time_diff_us = rw_cur_time_us - rw_last_sample_gear_time_us;
+
+      rw_last_sample_gear_time_us = rw_cur_time_us;
+    }
+    ++rw_gear_count;
+  }
+  rw_last_gear_time_diff_us = rw_gear_time_diff_us;
+  rw_last_gear_time_us = rw_cur_time_us;
+}
+
 void on_outbound_limit_switch() {
   odrive.set_absolute_position(0.0);
   odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
@@ -268,9 +308,14 @@ void control_function() {
   noInterrupts();
   control_state.engine_count = engine_count;
   control_state.gear_count = gear_count;
+  control_state.lw_gear_count = lw_gear_count;
+  control_state.rw_gear_count = rw_gear_count;
+
   float cur_engine_time_diff_us = engine_time_diff_us;
   float cur_filt_engine_time_diff_us = filt_engine_time_diff_us;
   float cur_gear_time_diff_us = gear_time_diff_us;
+  float lw_cur_gear_time_diff_us = lw_gear_time_diff_us; 
+  float rw_cur_gear_time_diff_us = rw_gear_time_diff_us; 
   interrupts();
 
   // Calculate instantaneous RPMs
@@ -306,6 +351,21 @@ void control_function() {
 
   float wheel_mph = control_state.filtered_secondary_rpm *
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
+
+  float left_front_wheel_rpm = 0.0;  
+  if (lw_gear_time_diff_us != 0) {
+    left_front_wheel_rpm = L_WHEEL_GEAR_SAMPLE_WINDOW / WHEEL_GEAR_COUNTS_PER_ROT / 
+                          lw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+  }
+  control_state.left_front_wheel_rpm = left_front_wheel_rpm;
+
+  float right_front_wheel_rpm = 0.0; 
+  float filt_rfw_rpm = 0.0; 
+  if (rw_gear_time_diff_us != 0) {
+    right_front_wheel_rpm = R_WHEEL_GEAR_SAMPLE_WINDOW / WHEEL_GEAR_COUNTS_PER_ROT / 
+                          rw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+  }
+  control_state.right_front_wheel_rpm = right_front_wheel_rpm;
 
   // Controller
   if (WHEEL_REF_ENABLED) {
