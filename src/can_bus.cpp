@@ -1,9 +1,9 @@
 #include "constants.h"
 #include <FlexCAN_T4.h>
-#include <odrive.h>
 #include <can_bus.h>
 #include <string>
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> can_test;
+
+FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16>  CAN_BUS::flexcan_bus;
 
 CAN_BUS::CAN_BUS()
 {
@@ -29,12 +29,12 @@ CAN_BUS::CAN_BUS()
  * @param buf 8-wide array of command data bytes
  * @return Status code of command send
  */
-u8 CAN_BUS::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[], FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16>* can_test) {
+u8 CAN_BUS::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   // TODO: Fix error mwessages
   CANFD_message_t msg;
 
   if (func_id < 0x00 || 0x1f < func_id) {
-    return ODrive::CMD_ERROR_INVALID_COMMAND;
+    return 404;
   }
 
   msg.id = (node_id << 5) | func_id;
@@ -42,11 +42,11 @@ u8 CAN_BUS::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[], FlexCA
   memcpy(&msg.buf, buf, 64);
   //msg.flags.remote = remote;
 
-  int write_code = can_test->write(msg);
+  int write_code = flexcan_bus.write(msg);
   if (write_code == -1) {
-    return ODrive::CMD_ERROR_WRITE_FAILED;
+    return 405;
   }
-  return ODrive::CMD_SUCCESS;
+  return 1;
 }
 
 void CAN_BUS::can_parse(const CANFD_message_t &msg)
