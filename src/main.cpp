@@ -5,22 +5,62 @@
 #include <string.h>
 #include <can_bus.h>
 //initializing global objects 
-CAN_BUS bus;
+FlexCAN_T4FD<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
+CAN_BUS bus(&flexcan_bus);
 
 // put function declarations here:
-void receive_can_msg(const CAN_message_t &msg) { /*parse message*/ }
+void receive_can_msg(const CANFD_message_t &msg) { bus.can_parse(msg); }
 
 void setup() {
+  Serial.begin(6700); 
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_1_PIN, OUTPUT);  
 
+  flexcan_bus.begin();
+  CANFD_timings_t config;
+  config.clock = CLK_24MHz;
+  config.baudrate = FLEXCAN_BAUD_RATE;
+  config.baudrateFD = FLEXCAN_BAUD_RATE;
+  config.propdelay = 190;
+  config.bus_length = 1;
+  config.sample = 75;
+
+  flexcan_bus.setBaudRate(config);
+  //flexcan_bus->setMB(FLEXCAN_MAX_MAILBOX);
+  flexcan_bus.enableFIFO();
+  flexcan_bus.enableMBInterrupts();
+  flexcan_bus.onReceive(receive_can_msg);
+
+  digitalWrite(LED_1_PIN, HIGH); 
+  digitalWrite(LED_BUILTIN, HIGH); 
+  delay(1000); 
+  digitalWrite(LED_1_PIN, LOW); 
+  digitalWrite(LED_BUILTIN, LOW); 
 }
 
 void loop() {
+
+  digitalWrite(LED_BUILTIN, LOW);
     
-    char* message = "Hello from Dash!";
-    u8 buf [64];
-    memcpy(buf, message, strlen(message) + 1); 
-    bus.send_command(1, 3, 0, buf);
-    delay(100);
+  CANFD_message_t msg;
+  msg.id = 0x107;
+  msg.len = 64;
+  const char* buf = "Hello from PCB!";
+  memcpy(&msg.buf, buf, strlen(buf));
+
+  int write_code = flexcan_bus.write(msg);
+  if (write_code == -1) {
+    Serial.printf("Failed Sending CAN Message\n"); 
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    Serial.printf("Sent CAN Message");
+  }
+
+  delay(1000);
+   
+  //bus.send_command(1, 2, 0, buf);
+
+    
     // put your main code here, to run repeatedly:
 
     /*if (bus.read(msg)) {
@@ -34,11 +74,6 @@ void loop() {
       Serial.printf("Received Message: %d", received_msg);
     }
     */
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
 
 // #include "core_pins.h"

@@ -3,23 +3,13 @@
 #include <can_bus.h>
 #include <string>
 
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16>  CAN_BUS::flexcan_bus;
 
-CAN_BUS::CAN_BUS()
-{
-  flexcan_bus.begin();
-  CANFD_timings_t config;
-  config.clock = CLK_24MHz;
-  config.baudrate = FLEXCAN_BAUD_RATE;
-  config.baudrateFD = FLEXCAN_BAUD_RATE;
-  config.propdelay = 190;
-  config.bus_length = 1;
-  config.sample = 75;
-  flexcan_bus.setBaudRate(config);
-  //flexcan_bus.setMB(FLEXCAN_MAX_MAILBOX);
-  flexcan_bus.enableFIFO();
-  flexcan_bus.enableMBInterrupts();
-  flexcan_bus.onReceive(can_parse);
+
+CAN_BUS::CAN_BUS(FlexCAN_T4FD<CAN1, RX_SIZE_256, TX_SIZE_16>* flexcan_bus) :flexcan_bus(flexcan_bus)
+{}
+
+void CAN_BUS::init() {
+
 }
 /**
  * @brief Send a command
@@ -42,7 +32,7 @@ u8 CAN_BUS::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   memcpy(&msg.buf, buf, 64);
   //msg.flags.remote = remote;
 
-  int write_code = flexcan_bus.write(msg);
+  int write_code = flexcan_bus->write(msg);
   if (write_code == -1) {
     return 405;
   }
