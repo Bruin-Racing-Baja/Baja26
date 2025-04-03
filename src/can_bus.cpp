@@ -3,23 +3,24 @@
 #include <can_bus.h>
 #include <string>
 
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16>  CAN_BUS::flexcan_bus;
+FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16>  Can_Bus::flexcan_bus;
 
-CAN_BUS::CAN_BUS()
+Can_Bus::Can_Bus()
 {
   flexcan_bus.begin();
-  CANFD_timings_t config;
-  config.clock = CLK_24MHz;
-  config.baudrate = FLEXCAN_BAUD_RATE;
-  config.baudrateFD = FLEXCAN_BAUD_RATE;
-  config.propdelay = 190;
-  config.bus_length = 1;
-  config.sample = 75;
-  flexcan_bus.setBaudRate(config);
-  //flexcan_bus.setMB(FLEXCAN_MAX_MAILBOX);
+  flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);
+  flexcan_bus.setMaxMB(FLEXCAN_MAX_MAILBOX);
   flexcan_bus.enableFIFO();
-  flexcan_bus.enableMBInterrupts();
+  flexcan_bus.enableFIFOInterrupt();
   flexcan_bus.onReceive(can_parse);
+}
+void Can_Bus::set_odrive_ecent(ODrive* odrive)
+{
+  odrive_ecent = odrive;
+}
+void Can_Bus::set_odrive_ecvt(ODrive* odrive)
+{
+  odrive_ecvt = odrive;
 }
 /**
  * @brief Send a command
@@ -29,30 +30,47 @@ CAN_BUS::CAN_BUS()
  * @param buf 8-wide array of command data bytes
  * @return Status code of command send
  */
-u8 CAN_BUS::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
+u8 Can_Bus::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   // TODO: Fix error mwessages
-  CANFD_message_t msg;
-
+  CAN_message_t msg;
   if (func_id < 0x00 || 0x1f < func_id) {
-    return 404;
+    return -1;
   }
-
-  msg.id = (node_id << 5) | func_id;
-  msg.len = 64;
-  memcpy(&msg.buf, buf, 64);
-  //msg.flags.remote = remote;
+  if(node_id == ODRIVE_ECENT_NODE_ID || node_id == ODRIVE_ECVT_NODE_ID)
+  {
+    msg.id = (node_id << 5) | func_id;
+  }
+  else
+  {
+    buf[0] = static_cast<u8>(func_id);
+    func_id = 0x1f;
+  }
+  msg.len = 8;
+  memcpy(&msg.buf, buf, 8);
+  msg.flags.remote = remote;
 
   int write_code = flexcan_bus.write(msg);
-  if (write_code == -1) {
-    return 405;
-  }
-  return 1;
+ 
+  return write_code;
+}
+u8 Can_Bus::send_command(CAN_message_t msg) {
+  return flexcan_bus.write(msg);
 }
 
-void CAN_BUS::can_parse(const CANFD_message_t &msg)
+void Can_Bus::can_parse(const CAN_message_t &msg)
 {
-  std::string s = "";
-  for (int i = 0; i < msg.len; i++)
-    s += std::to_string(msg.buf[i]);
-  Serial.print(s.c_str());
+  u32 parsed_node_id = (msg.id >> 5) & 0x3F;
+  u32 cmd_id = msg.id & 0x1F;
+
+  switch (parsed_node_id) {
+    case ODRIVE_ECVT_NODE_ID: //after figuring out cmd id change this later
+      odrive_ecvt->parse_message(msg);
+      break;
+    case ODRIVE_ECENT_NODE_ID: //after figuring out cmd id change this later
+      odrive_ecent->parse_message(msg);
+      break;
+    case CONTROLS_PCB_NODE_ID:
+    ;
+
+  }
 }

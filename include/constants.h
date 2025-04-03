@@ -7,6 +7,8 @@
 
 #define dancing 13
 
+
+constexpr uint32_t RASP_NODE_ID = 1;
 // Units
 constexpr float MINUTES_PER_HOUR = 60.0;
 constexpr float SECONDS_PER_MINUTE = 60.0; // s / min

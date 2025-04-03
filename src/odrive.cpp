@@ -2,9 +2,9 @@
 #include <FlexCAN_T4.h>
 #include <odrive.h>
 
-ODrive::ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus,
+ODrive::ODrive(Can_Bus* can_bus,
                u32 node_id)
-    : flexcan_bus(flexcan_bus), node_id(node_id) {
+    : can_bus(can_bus), node_id(node_id) {
   last_heartbeat_ms = 0;
 }
 
@@ -30,22 +30,11 @@ u8 ODrive::init() {
  */
 u8 ODrive::send_command(u32 cmd_id, bool remote, u8 buf[8]) {
   // TODO: Fix error messages
-  CAN_message_t msg;
 
   if (cmd_id < 0x00 || 0x1f < cmd_id) {
     return ODrive::CMD_ERROR_INVALID_COMMAND;
   }
-
-  msg.id = (node_id << 5) | cmd_id;
-  msg.len = 8;
-  memcpy(&msg.buf, buf, 8);
-  msg.flags.remote = remote;
-
-  int write_code = flexcan_bus->write(msg);
-  if (write_code == -1) {
-    return ODrive::CMD_ERROR_WRITE_FAILED;
-  }
-  return ODrive::CMD_SUCCESS;
+  return can_bus->send_command(cmd_id, node_id, remote, buf);
 }
 
 /**

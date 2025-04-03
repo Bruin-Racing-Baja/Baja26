@@ -2,9 +2,8 @@
 #define ODRIVE_H
 
 #include <Arduino.h>
-#include <FlexCAN_T4.h>
 #include <types.h>
-
+#include <can_bus.h>
 /**
  * @brief This class provides methods to communicate with an ODrive over the CAN
  * bus.
@@ -79,7 +78,7 @@ public:
   static const u8 CMD_ERROR_INVALID_COMMAND = 2;
   static const u8 CMD_ERROR_WRITE_FAILED = 3;
 
-  ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus, u32 node_id);
+  ODrive(Can_Bus* can_bus, u32 node_id);
 
   u8 init();
 
@@ -124,7 +123,7 @@ public:
   u8 set_vel_gains(float vel_gain, float vel_integrator_gain);
 
 private:
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus;
+  Can_Bus* can_bus;
 
   u32 node_id;
 
@@ -138,7 +137,7 @@ private:
   float vel_estimate, pos_estimate;
   float iq_setpoint, iq_measured;
   float bus_voltage, bus_current;
-
+  
   u8 send_command(u32 cmd_id, bool remote, u8 buf[8]);
   u8 send_empty_command(u32 cmd_id, bool remote);
 };
