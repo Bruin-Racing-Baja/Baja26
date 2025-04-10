@@ -69,6 +69,7 @@ constexpr float ECENTERLOCK_VELOCITY = 6;     // rot / s
 constexpr float ECENTERLOCK_HOME_VEL = 6;
 constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
 
+constexpr float ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE = 100; 
 
 constexpr float ECENTERLOCK_TORQUE = 0.0899; // Nm 
 constexpr u8 NUM_TRIES_ECENTERLOCK = 5; 

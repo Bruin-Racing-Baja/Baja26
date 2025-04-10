@@ -14,7 +14,10 @@ public:
     ENGAGED_4WD, 
     DISENGAGED_2WD,
     ENGAGING, 
-    DISENGAGING
+    DISENGAGING, 
+    WANT_ENGAGE,
+    WANT_DISENGAGE, 
+    WAITING_FOR_VEL
   };
 
   static const u8 SET_TORQUE_SUCCESS = 0;
