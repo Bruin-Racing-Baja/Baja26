@@ -33,7 +33,7 @@ enum class OperatingMode {
 };
 
 /**** Operation Flags ****/
-constexpr OperatingMode operating_mode = OperatingMode::NORMAL;
+constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can = true;
 
@@ -202,7 +202,7 @@ u8 write_to_double_buffer(u8 data[], size_t data_length,
 // TODO: Fix filtered engine spikes
 void on_engine_sensor() {
   u32 cur_time_us = micros();
-  if (cur_time_us - last_engine_time_us > ENGINE_COUNT_MINIMUM_TIME_MS) {
+  if (cur_time_us - last_engine_time_us > ENGINE_COUNT_MINIMUM_TIME_US) {
     if (engine_count % ENGINE_SAMPLE_WINDOW == 0) {
       engine_time_diff_us = cur_time_us - last_sample_engine_time_us;
       if (engine_time_diff_us > 12000) {
@@ -221,7 +221,7 @@ void on_engine_sensor() {
 
 void on_geartooth_sensor() {
   u32 cur_time_us = micros();
-  if (cur_time_us - last_gear_time_us > GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (cur_time_us - last_gear_time_us > GEAR_COUNT_MINIMUM_TIME_US) {
     if (gear_count % GEAR_SAMPLE_WINDOW == 0) {
       gear_time_diff_us = cur_time_us - last_sample_gear_time_us;
 
@@ -235,7 +235,7 @@ void on_geartooth_sensor() {
 
 void on_lw_geartooth_sensor() {
   u32 lw_cur_time_us = micros();
-  if (lw_cur_time_us - lw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (lw_cur_time_us - lw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_US) {
     if (gear_count % L_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
       lw_gear_time_diff_us = lw_cur_time_us - lw_last_sample_gear_time_us;
 
@@ -249,7 +249,7 @@ void on_lw_geartooth_sensor() {
 
 void on_rw_geartooth_sensor() {
   u32 rw_cur_time_us = micros();
-  if (rw_cur_time_us - rw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (rw_cur_time_us - rw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_US) {
     if (rw_gear_count % R_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
       rw_gear_time_diff_us = rw_cur_time_us - rw_last_sample_gear_time_us;
 
@@ -276,7 +276,7 @@ void on_engage_limit_switch() {
 
 void on_inbound_limit_switch() {
   odrive.set_absolute_position(15.0);
-  odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
 }
 
 // ඞ
@@ -490,11 +490,123 @@ void button_shift_mode() {
 void debug_mode() {
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
 
+  // if(digitalRead(LIMIT_SWITCH_OUT_PIN) == LOW) {
+  //   digitalWrite(LED_5_PIN, HIGH); 
+  // } else {
+  //   digitalWrite(LED_5_PIN, LOW); 
+  // }
+
+  // if(digitalRead(LIMIT_SWITCH_ENGAGE_PIN) == LOW) {
+  //   digitalWrite(LED_4_PIN, HIGH); 
+  // } else {
+  //   digitalWrite(LED_4_PIN, LOW); 
+  // }
+
+  // if(digitalRead(LIMIT_SWITCH_IN_PIN) == LOW) {
+  //   digitalWrite(LED_3_PIN, HIGH); 
+  // } else {
+  //   digitalWrite(LED_3_PIN, LOW); 
+  // }
+
+  control_state = ControlFunctionState_init_default;
+  control_state.cycle_start_us = micros();
+
+  control_state.raw_throttle = analogRead(THROTTLE_SENSOR_PIN);
+  control_state.raw_brake = analogRead(BRAKE_SENSOR_PIN);
+
+  control_state.throttle =
+      map_int_to_float(control_state.raw_throttle, THROTTLE_MIN_VALUE,
+                       THROTTLE_MAX_VALUE, 0.0, 1.0);
+  control_state.throttle = CLAMP(control_state.throttle, 0.0, 1.0);
+
+  control_state.brake = map_int_to_float(
+      control_state.raw_brake, BRAKE_MIN_VALUE, BRAKE_MAX_VALUE, 0.0, 1.0);
+  control_state.brake = CLAMP(control_state.brake, 0.0, 1.0);
+
+  control_state.throttle_filtered =
+      throttle_fitler.update(control_state.throttle);
+
+  control_state.d_throttle =
+      (control_state.throttle_filtered - last_throttle) / dt_s;
+  last_throttle = control_state.throttle_filtered;
+
+  // Grab sensor data
+  noInterrupts();
+  control_state.engine_count = engine_count;
+  control_state.gear_count = gear_count;
+  control_state.lw_gear_count = lw_gear_count;
+  control_state.rw_gear_count = rw_gear_count;
+
+  float cur_engine_time_diff_us = engine_time_diff_us;
+  float cur_filt_engine_time_diff_us = filt_engine_time_diff_us;
+  float cur_gear_time_diff_us = gear_time_diff_us;
+  float lw_cur_gear_time_diff_us = lw_gear_time_diff_us; 
+  float rw_cur_gear_time_diff_us = rw_gear_time_diff_us; 
+  interrupts();
+
+    // Populate control state
+  control_state.inbound_limit_switch = actuator.get_inbound_limit();
+  control_state.outbound_limit_switch = actuator.get_outbound_limit();
+  control_state.engage_limit_switch = actuator.get_engage_limit();
+
+  control_state.last_heartbeat_ms = odrive.get_time_since_heartbeat_ms();
+  control_state.disarm_reason = odrive.get_disarm_reason();
+  control_state.active_errors = odrive.get_active_errors();
+  control_state.procedure_result = odrive.get_procedure_result();
+
+  control_state.bus_current = odrive.get_bus_current();
+  control_state.bus_voltage = odrive.get_bus_voltage();
+  control_state.iq_measured = odrive.get_iq_measured();
+  control_state.iq_setpoint = odrive.get_iq_setpoint();
+
+  control_state.velocity_estimate = odrive.get_vel_estimate();
+  control_state.position_estimate = odrive.get_pos_estimate();
+
+  control_state.p_term = ACTUATOR_KP;
+  control_state.d_term = ACTUATOR_KD;
+
+  if (sd_initialized && !logging_disconnected) {
+    // Serialize control state
+    size_t message_length = encode_pb_message(
+        message_buffer, MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
+        &ControlFunctionState_msg, &control_state);
+
+    // Write to double buffer
+    u8 write_status = write_to_double_buffer(
+        message_buffer, message_length, double_buffer, &cur_buffer_num, false);
+
+    if (write_status != 0) {
+      Serial.printf("Error: Failed to write to double buffer with error %d\n",
+                    write_status);
+    }
+  }
+
   // Grab sensor data
   noInterrupts();
   control_state.engine_count = engine_count;
   control_state.gear_count = gear_count;
   interrupts();
+
+  control_state.engine_rpm = 0;
+  if (engine_time_diff_us != 0) {
+    control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+                               cur_engine_time_diff_us * US_PER_SECOND *
+                               SECONDS_PER_MINUTE;
+    control_state.filtered_engine_rpm =
+        ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+        cur_filt_engine_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+
+    // TODO: Confirm we need median filter
+    control_state.filtered_engine_rpm =
+        engine_rpm_median_filter.update(control_state.filtered_engine_rpm);
+    control_state.filtered_engine_rpm =
+        engine_rpm_time_filter.update(control_state.filtered_engine_rpm);
+  }
+
+  Serial.printf("Engine RPM %f\n", control_state.engine_rpm); 
+  //Serial.printf("Engine Count %d\n", engine_count);
+  // Serial.printf("Gear Count %d\n", gear_count);
+
 }
 
 void setup() {
@@ -622,7 +734,6 @@ void setup() {
   }
 
   // TODO: Why do we need delay?
-  digitalWrite(LED_3_PIN, HIGH);
   delay(3000);
   // Run actuator homing sequence
   u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
@@ -675,8 +786,8 @@ void setup() {
 
 void loop() {
   // LED indicators
-  digitalWrite(LED_4_PIN, actuator.get_outbound_limit());
-  digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
+  // digitalWrite(LED_4_PIN, actuator.get_outbound_limit());
+  // digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
 
   // Flush SD card if buffer full
   if (sd_initialized && !logging_disconnected) {

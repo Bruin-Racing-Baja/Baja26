@@ -176,10 +176,10 @@ constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
 #endif
 
-constexpr u32 ENGINE_COUNT_MINIMUM_TIME_MS = 100;
-constexpr u32 GEAR_COUNT_MINIMUM_TIME_MS = 300;
+constexpr u32 ENGINE_COUNT_MINIMUM_TIME_US = 100;
+constexpr u32 GEAR_COUNT_MINIMUM_TIME_US = 300;
 
-constexpr u32 WHEEL_GEAR_COUNT_MINIMUM_TIME_MS = 300; //reasonable variable?
+constexpr u32 WHEEL_GEAR_COUNT_MINIMUM_TIME_US = 300; //reasonable variable?
 
 constexpr u32 ENGINE_RPM_MEDIAN_FILTER_WINDOW = 3;
 
@@ -225,9 +225,9 @@ constexpr u8 LED_3_PIN = 9; // D2 on PCB
 constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
-constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
+constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
