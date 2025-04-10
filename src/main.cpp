@@ -378,6 +378,10 @@ void control_function() {
     control_state.target_rpm = ENGINE_TARGET_RPM;
   }
 
+
+
+
+
   control_state.engine_rpm_error =
       control_state.filtered_engine_rpm - control_state.target_rpm;
 
@@ -388,13 +392,26 @@ void control_function() {
       (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
   last_engine_rpm_error = filtered_engine_rpm_error;
 
+
+  float actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * actuator_offset_slope + actuator_offset_low;
+  actuator_offset = CLAMP(actuator_midpoint_offset, ACTUATOR_OFFSET_LOW, ACTUATOR_OFFSET_HIGH);
+
+
+  control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
+
+  // TODO: Handle integral-windup; tune and remove magic numbers
+  control_state.engine_rpm_error_integral = CLAMP(engine_rpm_error_integral, -500, 500);
+  if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
+    control_state.engine_rpm_error_integral = 0;
+  }
+
+  control_state.position_command = actuator_offset + control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
+  control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
+  
+  actuator.set_position(control_state.position_command);
+  /*
   control_state.velocity_mode = true;
 
-  /*
-  control_state.velocity_command =
-      control_state.engine_rpm_error * ACTUATOR_KP +
-      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD);
-      */
   control_state.velocity_command =
       control_state.engine_rpm_error * ACTUATOR_KP +
       control_state.engine_rpm_derror * ACTUATOR_KD +
@@ -405,18 +422,7 @@ void control_function() {
 
   actuator.set_velocity(control_state.velocity_command);
 
-  // TODO: Fix velocity for wacky rpm values
-  /*
-  control_state.velocity_mode = control_state.filtered_engine_rpm > 2300;
-  if (control_state.velocity_mode) {
-    control_state.velocity_command =
-        control_state.engine_rpm_error * ACTUATOR_KP;
-    actuator.set_velocity(control_state.velocity_command);
-  } else {
-    control_state.position_command = ACTUATOR_ENGAGE_POS_ROT;
-    actuator.set_position(control_state.position_command);
-  }
-*/
+  */
 
   // Populate control state
   control_state.inbound_limit_switch = actuator.get_inbound_limit();

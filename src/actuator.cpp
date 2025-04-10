@@ -100,13 +100,10 @@ u8 Actuator::set_position(float position) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
+  // TODO: Check which input mode to use
   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
-                                  ODrive::INPUT_MODE_TRAP_TRAJ) != 0) {
+                                  ODrive::INPUT_MODE_POS_FILTER) != 0) {
     return SET_POSITION_CAN_ERROR;
-  }
-
-  if (position < 0.0 || ACTUATOR_INBOUND_POS_ROT < position) {
-    return SET_POSITION_LIMIT_SWITCH_ERROR;
   }
 
   if (odrive->set_input_pos(position, 0, 0) != 0) {

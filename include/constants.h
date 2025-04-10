@@ -86,10 +86,29 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 // 4: Penn Acceleration
 // 5: Penn Hill Climb NOTE: DONE
 // 6: Penn Maneuverability NOTE: DONE
+// 7: Position Control
 
-#define MODE 3
+#define MODE 7
 
-#if MODE == 0
+#if MODE == 7
+constexpr float ACTUATOR_MAX_POS = 1.0;
+constexpr float ACTUATOR_MIN_POS = 13.4;
+constexpr float ACTUATOR_OFFSET_LOW = 0.0;
+constexpr float ACTUATOR_OFFSET_HIGH = 10.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 5.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 15.0;
+constexpr float ACTUATOR_OFFSET_SLOPE = (ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH);
+constexpr float ACTUATOR_KP = 0.006;
+constexpr float ACTUATOR_KI = 0.003;
+constexpr bool WHEEL_REF_ENABLED = true;
+constexpr float WHEEL_REF_LOW_RPM = 1800;
+constexpr float WHEEL_REF_HIGH_RPM = 3100;
+constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
+constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
+constexpr float WHEEL_REF_PIECEWISE_SLOPE =
+    (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
+    (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
+#elif MODE == 0
 constexpr float ACTUATOR_KP = 0.02;
 constexpr float ACTUATOR_KD = 0.015;
 constexpr float THROTTLE_KD = 0.0;
