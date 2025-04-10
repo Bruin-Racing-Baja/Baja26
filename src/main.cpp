@@ -368,18 +368,11 @@ void control_function() {
   control_state.right_front_wheel_rpm = right_front_wheel_rpm;
 
   // Controller
-  if (WHEEL_REF_ENABLED) {
-    control_state.target_rpm =
-        (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
-        WHEEL_REF_LOW_RPM;
-    control_state.target_rpm =
-        CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
-  } else {
-    control_state.target_rpm = ENGINE_TARGET_RPM;
-  }
-
-
-
+  control_state.target_rpm =
+      (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
+      WHEEL_REF_LOW_RPM;
+  control_state.target_rpm =
+      CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
 
 
   control_state.engine_rpm_error =
@@ -393,14 +386,14 @@ void control_function() {
   last_engine_rpm_error = filtered_engine_rpm_error;
 
 
-  float actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * actuator_offset_slope + actuator_offset_low;
-  actuator_offset = CLAMP(actuator_midpoint_offset, ACTUATOR_OFFSET_LOW, ACTUATOR_OFFSET_HIGH);
+  float actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE + ACTUATOR_OFFSET_LOW;
+  actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_LOW, ACTUATOR_OFFSET_HIGH);
 
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
 
   // TODO: Handle integral-windup; tune and remove magic numbers
-  control_state.engine_rpm_error_integral = CLAMP(engine_rpm_error_integral, -500, 500);
+  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -500, 500);
   if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
     control_state.engine_rpm_error_integral = 0;
   }
@@ -443,7 +436,7 @@ void control_function() {
   control_state.position_estimate = odrive.get_pos_estimate();
 
   control_state.p_term = ACTUATOR_KP;
-  control_state.d_term = ACTUATOR_KD;
+  //control_state.d_term = ACTUATOR_KD;
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
@@ -569,7 +562,7 @@ void debug_mode() {
   control_state.position_estimate = odrive.get_pos_estimate();
 
   control_state.p_term = ACTUATOR_KP;
-  control_state.d_term = ACTUATOR_KD;
+  // control_state.d_term = ACTUATOR_KD;
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
@@ -760,8 +753,6 @@ void setup() {
   operation_header.timestamp = now();
   operation_header.clock_us = micros();
   operation_header.controller_kp = ACTUATOR_KP;
-  operation_header.controller_kd = ACTUATOR_KD;
-  operation_header.target_rpm = ENGINE_TARGET_RPM;
   operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
   operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
   operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
