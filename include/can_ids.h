@@ -39,10 +39,10 @@ const u32 CAN_BRAKE = 30;
 const u32 can_brake_filtered = 31;
 const u32 CAN_ECVT_ACTUATOR_KP = 32;
 const u32 CAN_ECVT_ACTUATOR_KD = 33;
-const u32 can_wheel_ref_low_rpm = 34;
-const u32 can_wheel_ref_high_rpm = 35;
-const u32 can_wheel_ref_breakpoint_low_mph = 36;
-const u32 can_wheel_ref_breakpoint_high_mph = 37;
+const u32 CAN_WHEEL_REF_LOW_RPM = 34;
+const u32 CAN_WHEEL_REF_HIGH_RPM = 35;
+const u32 CAN_WHEEL_REF_BREAKPOINT_LOW_MPH = 36;
+const u32 CAN_WHEEL_REF_BREAKPOINT_HIGH_MPH = 37;
 const u32 CAN_D_THROTTLE = 38;
 const u32 CAN_RAW_THROTTLE = 39;
 const u32 CAN_RAW_BRAKE = 40;
@@ -50,5 +50,6 @@ const u32 CAN_LW_GEAR_COUNT = 41;
 const u32 CAN_RW_GEAR_COUNT = 42;
 const u32 CAN_LEFT_FRONT_WHEEL_RPM = 43;
 const u32 CAN_RIGHT_FRONT_WHEEL_RPM = 44;
+const u32 CAN_REAL_TIME = 45;
 
 #endif

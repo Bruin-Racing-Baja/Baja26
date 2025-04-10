@@ -7,8 +7,6 @@
 
 #define dancing 13
 
-
-constexpr uint32_t RASP_NODE_ID = 1;
 // Units
 constexpr float MINUTES_PER_HOUR = 60.0;
 constexpr float SECONDS_PER_MINUTE = 60.0; // s / min
@@ -27,8 +25,6 @@ constexpr float INCH_PER_FEET = 12.0;   // inch / feet
 constexpr float ENGINE_COUNTS_PER_ROT = 16; // count / rot                     // [NEED TO UPDATE]
 constexpr float GEAR_COUNTS_PER_ROT = 46;   // count / rot                     // [NEED TO UPDATE]
 
-constexpr float WHEEL_GEAR_COUNTS_PER_ROT = 8; // count / rot
-
 // NOTE: x_to_y ratio is how many rotations of x for 1 rotation of y
 constexpr float GEAR_TO_WHEEL_RATIO = 56.0 / 19.0;                           // [NEED TO UPDATE]
 constexpr float GEAR_TO_SECONDARY_RATIO = 17.0 / 46.0;                        // [NEED TO UPDATE]
@@ -45,9 +41,6 @@ constexpr float WHEEL_MPH_PER_RPM = (WHEEL_DIAMETER_INCH * M_PI) /
 
 constexpr u32 ENGINE_SAMPLE_WINDOW = 4;
 constexpr u32 GEAR_SAMPLE_WINDOW = 10;
-constexpr u32 L_WHEEL_GEAR_SAMPLE_WINDOW = 1; 
-constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
- 
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                                           //[Update??]
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s
@@ -180,8 +173,6 @@ constexpr float WHEEL_REF_PIECEWISE_SLOPE =
 constexpr u32 ENGINE_COUNT_MINIMUM_TIME_MS = 100;
 constexpr u32 GEAR_COUNT_MINIMUM_TIME_MS = 300;
 
-constexpr u32 WHEEL_GEAR_COUNT_MINIMUM_TIME_MS = 300; //reasonable variable?
-
 constexpr u32 ENGINE_RPM_MEDIAN_FILTER_WINDOW = 3;
 
 constexpr float ENGINE_RPM_ROTATION_FILTER_B[] = {
@@ -232,13 +223,13 @@ constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
-constexpr u8 ENGINE_SENSOR_PIN = 16; 
-constexpr u8 GEARTOOTH_SENSOR_PIN = 15; 
-constexpr u8 L_WHEEL_GEARTOOTH_SENSOR_PIN = 14;
-constexpr u8 R_WHEEL_GEARTOOTH_SENSOR_PIN = 13; 
+constexpr u8 ENGINE_SENSOR_PIN = 38; 
+constexpr u8 GEARTOOTH_SENSOR_PIN = 37; 
 
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
+
+// [Add front wheel speed sensors and centerlock sensors]
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;     //[UPDATE???]
