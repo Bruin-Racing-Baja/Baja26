@@ -61,7 +61,8 @@ void Can_Bus::can_parse(const CAN_message_t &msg)
 {
   u32 parsed_node_id = (msg.id >> 5) & 0x3F;
   u32 cmd_id = msg.id & 0x1F;
-
+  odrive_ecvt->parse_message(msg);
+  /*
   switch (parsed_node_id) {
     case ODRIVE_ECVT_NODE_ID: //after figuring out cmd id change this later
       odrive_ecvt->parse_message(msg);
@@ -73,4 +74,5 @@ void Can_Bus::can_parse(const CAN_message_t &msg)
     ;
 
   }
+    */
 }

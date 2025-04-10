@@ -76,7 +76,7 @@ bool sd_initialized = false;
 /**** ECVT State Variables ****/
 // TODO: Confirm variables only accessed in timer ISR dont need to be volatile
 u32 control_cycle_count = 0;
-u32 cycle_count = 1;
+u32 sync_val = 0;
 volatile u32 engine_count = 0;
 volatile u32 engine_time_diff_us = 0;
 volatile float filt_engine_time_diff_us = 0;
@@ -312,8 +312,9 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
 
 void control_function() {
   control_state = ControlFunctionState_init_default;
-  u32 sync_val = cycle_count++ % 100;
+  sync_val = (sync_val + 1) % 100;
 
+  can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
   can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
 
   can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, sync_val, micros()));
@@ -740,15 +741,33 @@ void setup() {
   OperationHeader operation_header;
 
   operation_header.timestamp = now();
+  can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, 0, (u32) now())); 
+
   operation_header.clock_us = micros();
+  can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, 0, (u32) micros())); 
+
   operation_header.controller_kp = ACTUATOR_KP;
+  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, 0, (u32) ACTUATOR_KP)); 
+
   operation_header.controller_kd = ACTUATOR_KD;
+  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, 0, (u32) ACTUATOR_KD)); 
+
   operation_header.target_rpm = ENGINE_TARGET_RPM;
+  can_buffer.push(create_can_msg(CAN_TARGET_RPM, RASP_NODE_ID, 0, (u32) ENGINE_TARGET_RPM)); 
+  
   operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
+  can_buffer.push(create_can_msg(CAN_WHEEL_REF_LOW_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_LOW_RPM)); 
+
   operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
+  can_buffer.push(create_can_msg(WHEEL_REF_HIGH_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_HIGH_RPM)); 
+
   operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
+  can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_LOW_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_LOW_MPH)); 
+
   operation_header.wheel_ref_breakpoint_high_mph =
       WHEEL_REF_BREAKPOINT_HIGH_MPH;
+  
+  can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_HIGH_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_HIGH_MPH)); 
 
   size_t message_length = encode_pb_message(
       message_buffer, MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
