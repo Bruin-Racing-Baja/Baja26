@@ -4,8 +4,13 @@
 #include <string>
 
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16>  Can_Bus::flexcan_bus;
-
+ODrive* Can_Bus::odrive_ecvt = nullptr;
+ODrive* Can_Bus::odrive_ecent = nullptr;
 Can_Bus::Can_Bus()
+{
+  
+}
+void Can_Bus::setup()
 {
   flexcan_bus.begin();
   flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);

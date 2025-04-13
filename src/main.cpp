@@ -207,7 +207,7 @@ u8 write_to_double_buffer(u8 data[], size_t data_length,
 // TODO: Fix filtered engine spikes
 void on_engine_sensor() {
   u32 cur_time_us = micros();
-  if (cur_time_us - last_engine_time_us > ENGINE_COUNT_MINIMUM_TIME_MS) {
+  if (cur_time_us - last_engine_time_us > ENGINE_COUNT_MINIMUM_TIME_US) {
     if (engine_count % ENGINE_SAMPLE_WINDOW == 0) {
       engine_time_diff_us = cur_time_us - last_sample_engine_time_us;
       if (engine_time_diff_us > 12000) {
@@ -226,7 +226,7 @@ void on_engine_sensor() {
 
 void on_geartooth_sensor() {
   u32 cur_time_us = micros();
-  if (cur_time_us - last_gear_time_us > GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (cur_time_us - last_gear_time_us > GEAR_COUNT_MINIMUM_TIME_US) {
     if (gear_count % GEAR_SAMPLE_WINDOW == 0) {
       gear_time_diff_us = cur_time_us - last_sample_gear_time_us;
 
@@ -240,7 +240,7 @@ void on_geartooth_sensor() {
 
 void on_lw_geartooth_sensor() {
   u32 lw_cur_time_us = micros();
-  if (lw_cur_time_us - lw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (lw_cur_time_us - lw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_US) {
     if (gear_count % L_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
       lw_gear_time_diff_us = lw_cur_time_us - lw_last_sample_gear_time_us;
 
@@ -254,7 +254,7 @@ void on_lw_geartooth_sensor() {
 
 void on_rw_geartooth_sensor() {
   u32 rw_cur_time_us = micros();
-  if (rw_cur_time_us - rw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_MS) {
+  if (rw_cur_time_us - rw_last_gear_time_us > WHEEL_GEAR_COUNT_MINIMUM_TIME_US) {
     if (rw_gear_count % R_WHEEL_GEAR_SAMPLE_WINDOW == 0) {
       rw_gear_time_diff_us = rw_cur_time_us - rw_last_sample_gear_time_us;
 
@@ -292,8 +292,9 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id,  u32 sync_val, float data
   u8 buf[8];
   msg.buf[0] = static_cast<u8>(func_id);
   msg.buf[1] = static_cast<u8>(sync_val);
+  msg.buf[6] = 1;
   msg.id = (node_id << 5) | 0xFF;
-  msg.len = 5;
+  msg.len = 7;
   memcpy(msg.buf + 2, &data, 4);
   msg.flags.remote = false;
   return msg;
@@ -303,8 +304,9 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
   u8 buf[8];
   msg.buf[0] = static_cast<u8>(func_id);
   msg.buf[1] = static_cast<u8>(sync_val);
+  msg.buf[6] = 0;
   msg.id = (node_id << 5) | 0xFF;
-  msg.len = 5;
+  msg.len = 7;
   memcpy(msg.buf + 2, &data, 4);
   msg.flags.remote = false;
   return msg;

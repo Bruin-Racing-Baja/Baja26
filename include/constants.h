@@ -48,7 +48,9 @@ constexpr u32 L_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
-constexpr u8 ODRIVE_NODE_ID = 0x3;                            
+constexpr u8 ODRIVE_NODE_ID = 0x3;
+constexpr u8 RASP_NODE_ID = 0x4;                            
+
 constexpr float ODRIVE_VEL_LIMIT = 20.0;        // rot / s    //TODO: CHange this to reasonable value
 constexpr float ODRIVE_CURRENT_SOFT_MAX = 10.0; // A          // TODO: Check if this is the right value 
 
