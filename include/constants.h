@@ -49,8 +49,8 @@ constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                            
-constexpr float ODRIVE_VEL_LIMIT = 20.0;        // rot / s    //TODO: CHange this to reasonable value
-constexpr float ODRIVE_CURRENT_SOFT_MAX = 10.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_VEL_LIMIT = 40.0;        // rot / s    //TODO: CHange this to reasonable value
+constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
 
 // Driver Interface
 constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
@@ -96,18 +96,19 @@ constexpr float ACTUATOR_MIN_POS = -10.0;
 constexpr float ACTUATOR_OFFSET_LOW = -2; 
 constexpr float ACTUATOR_OFFSET_HIGH = -10;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 5.0;
-constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 25.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 10.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.0045;   // TUNE 
-constexpr float ACTUATOR_KI = 0.00;   // TUNE
+constexpr float ACTUATOR_KP = 0.003;   // TUNE 
+constexpr float ACTUATOR_KI = 0.003;   // TUNE
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 1800;
-constexpr float WHEEL_REF_HIGH_RPM = 3500;
+constexpr float WHEEL_REF_HIGH_RPM = 3500; // potentially move this value to 3100 to get more of power band 
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
+constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 10;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
+constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 1.0; 
 #elif MODE == 0
 constexpr float ACTUATOR_KP = 0.02;
 constexpr float ACTUATOR_KD = 0.015;

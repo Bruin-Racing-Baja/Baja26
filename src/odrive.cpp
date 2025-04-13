@@ -234,6 +234,7 @@ u8 ODrive::set_absolute_position(float position) {
 u8 ODrive::set_pos_gain(float pos_gain) {
   u8 buf[8] = {0};
   memcpy(buf, &pos_gain, 4);
+  
   return send_command(CAN_SET_POS_GAIN, false, buf);
 }
 

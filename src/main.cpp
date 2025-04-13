@@ -392,6 +392,8 @@ void control_function() {
   actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
+  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
+
 
   // TODO: Handle integral-windup; tune and remove magic numbers
   // TODO: Make sign a global variable
