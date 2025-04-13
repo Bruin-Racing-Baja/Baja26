@@ -406,7 +406,7 @@ void control_function() {
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
   
   // to not interfere with starting the car 
-  if (control_state.engine_rpm < 1000) {
+  if (control_state.engine_rpm < 500) {
     control_state.position_command = 0; 
   }
 
