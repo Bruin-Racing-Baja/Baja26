@@ -31,7 +31,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
     u32 start_time = millis();
     while (!get_engage_limit()) {
       // TODO: Why does this have to be set in the loop?
-      set_velocity(ACTUATOR_HOME_VELOCITY);
+      set_velocity(-ACTUATOR_HOME_VELOCITY);
       if ((millis() - start_time) > timeout_ms) {
         return HOME_TIMEOUT_ERROR;
       }
@@ -43,7 +43,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
-    set_velocity(-ACTUATOR_HOME_VELOCITY);
+    set_velocity(ACTUATOR_HOME_VELOCITY);
     if ((millis() - start_time) > timeout_ms) {
       return HOME_TIMEOUT_ERROR;
     }

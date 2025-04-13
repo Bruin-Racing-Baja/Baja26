@@ -375,8 +375,10 @@ void control_function() {
       CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
 
 
+  // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
+  // TODO: Make sign a global variable
   control_state.engine_rpm_error =
-      control_state.filtered_engine_rpm - control_state.target_rpm;
+      (control_state.target_rpm - control_state.filtered_engine_rpm);
 
   float filtered_engine_rpm_error =
       engine_rpm_derror_filter.update(control_state.engine_rpm_error);
@@ -386,36 +388,33 @@ void control_function() {
   last_engine_rpm_error = filtered_engine_rpm_error;
 
 
-  float actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE + ACTUATOR_OFFSET_LOW;
-  actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_LOW, ACTUATOR_OFFSET_HIGH);
-
+  float actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
+  actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
 
   // TODO: Handle integral-windup; tune and remove magic numbers
+  // TODO: Make sign a global variable
   control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -500, 500);
   if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
     control_state.engine_rpm_error_integral = 0;
   }
 
+  // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
   control_state.position_command = actuator_offset + control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
+  float pid_value = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
   
+  // to not interfere with starting the car 
+  if (control_state.engine_rpm < 1000) {
+    control_state.position_command = 0; 
+  }
+
   actuator.set_position(control_state.position_command);
-  /*
-  control_state.velocity_mode = true;
+  if (control_state.cycle_count % 200 == 0) {
+    Serial.printf("Offset %f, Ref %f, PID %f, Pos Com %f \n", actuator_offset, wheel_mph, pid_value, control_state.engine_rpm_error); 
+  }
 
-  control_state.velocity_command =
-      control_state.engine_rpm_error * ACTUATOR_KP +
-      control_state.engine_rpm_derror * ACTUATOR_KD +
-      MAX(0, control_state.d_throttle * THROTTLE_KD);
-
-  control_state.velocity_command = CLAMP(control_state.velocity_command,
-                                         -ODRIVE_VEL_LIMIT, ODRIVE_VEL_LIMIT);
-
-  actuator.set_velocity(control_state.velocity_command);
-
-  */
 
   // Populate control state
   control_state.inbound_limit_switch = actuator.get_inbound_limit();
@@ -488,6 +487,7 @@ void button_shift_mode() {
 
 void debug_mode() {
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
+  control_cycle_count++;
 
   // if(digitalRead(LIMIT_SWITCH_OUT_PIN) == LOW) {
   //   digitalWrite(LED_5_PIN, HIGH); 
@@ -602,7 +602,42 @@ void debug_mode() {
         engine_rpm_time_filter.update(control_state.filtered_engine_rpm);
   }
 
-  Serial.printf("Engine RPM %f\n", control_state.engine_rpm); 
+    control_state.engine_rpm = 0;
+  if (engine_time_diff_us != 0) {
+    control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+                               cur_engine_time_diff_us * US_PER_SECOND *
+                               SECONDS_PER_MINUTE;
+    control_state.filtered_engine_rpm =
+        ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+        cur_filt_engine_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+
+    // TODO: Confirm we need median filter
+    control_state.filtered_engine_rpm =
+        engine_rpm_median_filter.update(control_state.filtered_engine_rpm);
+    control_state.filtered_engine_rpm =
+        engine_rpm_time_filter.update(control_state.filtered_engine_rpm);
+  }
+
+  float gear_rpm = 0.0;
+  float filt_gear_rpm = 0.0;
+  if (gear_time_diff_us != 0) {
+    gear_rpm = GEAR_SAMPLE_WINDOW / GEAR_COUNTS_PER_ROT /
+               cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+    filt_gear_rpm = gear_rpm_time_filter.update(gear_rpm);
+  }
+
+  float wheel_rpm = gear_rpm * GEAR_TO_WHEEL_RATIO;
+  control_state.secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
+  control_state.filtered_secondary_rpm =
+      filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
+
+  float wheel_mph = control_state.filtered_secondary_rpm *
+                    WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
+
+  if (control_cycle_count % 20 == 0) {
+    Serial.printf("Engine RPM: %f\n", control_state.engine_rpm); 
+    Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+  }
   //Serial.printf("Engine Count %d\n", engine_count);
   // Serial.printf("Gear Count %d\n", gear_count);
 
