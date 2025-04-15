@@ -48,9 +48,31 @@ constexpr u32 L_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
-constexpr u8 ODRIVE_NODE_ID = 0x3;                            
+constexpr u8 ODRIVE_NODE_ID = 0x3;                         
 constexpr float ODRIVE_VEL_LIMIT = 40.0;        // rot / s    //TODO: CHange this to reasonable value
 constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
+
+//Ecenterlock 
+constexpr u8 ECENTERLOCK_ODRIVE_NODE_ID = 0x7; 
+
+constexpr float ECENTERLOCK_PITCH_MM = 2.54; // mm / rot
+constexpr float ECENTERLOCK_PITCH_CM = ECENTERLOCK_PITCH_MM / 10.0; // cm / rot
+
+constexpr float ECENTERLOCK_ENGAGE_POS_ROT = 4.0;   // ROT? 
+constexpr float ECENTERLOCK_ENGAGE_POS_CM =
+    ECENTERLOCK_ENGAGE_POS_ROT * ECENTERLOCK_PITCH_CM; // cm
+ 
+constexpr float ECENTERLOCK_ENGAGED_POSITION = 2.1; 
+constexpr float ECENTERLOCK_VELOCITY = 6;     // rot / s 
+
+constexpr float ECENTERLOCK_HOME_VEL = 6;
+constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
+
+constexpr float ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE = 100; 
+
+constexpr float ECENTERLOCK_TORQUE = 0.0899; // Nm 
+constexpr u8 NUM_TRIES_ECENTERLOCK = 5; 
 
 // Driver Interface
 constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
@@ -261,6 +283,9 @@ constexpr u8 ECENTERLOCK_SENSOR_PIN = 15;
 
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
+
+constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 24; 
+constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 25; 
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;  
