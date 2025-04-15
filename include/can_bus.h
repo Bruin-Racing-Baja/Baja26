@@ -3,6 +3,7 @@
 #include <FlexCAN_T4.h>
 #include <types.h>
 #include <odrive.h>
+class ODrive;
 class Can_Bus
 {
     public:
@@ -15,7 +16,7 @@ class Can_Bus
         static void setup();
     
     private:
-        static FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
+        static FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
         static ODrive* odrive_ecvt;
         static ODrive* odrive_ecent;
         static const u8 ODRIVE_ECVT_NODE_ID = 1;

@@ -37,7 +37,7 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL;
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can = true;
+constexpr bool wait_for_can = false;
 
 
 /**** Global Objects ****/

@@ -8,6 +8,7 @@
  * @brief This class provides methods to communicate with an ODrive over the CAN
  * bus.
  */
+class Can_Bus;
 class ODrive {
 
 public:

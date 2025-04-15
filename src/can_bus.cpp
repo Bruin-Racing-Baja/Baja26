@@ -3,7 +3,7 @@
 #include <can_bus.h>
 #include <string>
 
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16>  Can_Bus::flexcan_bus;
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16>  Can_Bus::flexcan_bus;
 ODrive* Can_Bus::odrive_ecvt = nullptr;
 ODrive* Can_Bus::odrive_ecent = nullptr;
 Can_Bus::Can_Bus()
@@ -59,6 +59,7 @@ u8 Can_Bus::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   return write_code;
 }
 u8 Can_Bus::send_command(CAN_message_t msg) {
+  Serial.print("Sending");
   return flexcan_bus.write(msg);
 }
 
