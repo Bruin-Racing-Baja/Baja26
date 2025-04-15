@@ -312,7 +312,7 @@ void on_ecenterlock_switch_disengage() {
   }
 }
 
-void ecenterlock_control_function(u32 gear_rpm, u32 left_wheel_rpm, u32 right_wheel_rpm) {
+inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm) {
   int cycles_to_wait_for_vel = 10; 
 
   float avg_front_rpm = ((left_wheel_rpm + right_wheel_rpm) / 2);
