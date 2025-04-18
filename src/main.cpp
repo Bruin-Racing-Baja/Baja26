@@ -406,12 +406,12 @@ void control_function() {
   control_state.position_command = actuator_offset + control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
   float pid_value = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
-  
+  /*
   // to not interfere with starting the car 
   if (control_state.engine_rpm < 500) {
     control_state.position_command = 0; 
   }
-
+  */
   actuator.set_position(control_state.position_command);
   if (control_state.cycle_count % 200 == 0) {
     Serial.printf("Offset %f, Ref %f, PID %f, Pos Com %f \n", actuator_offset, wheel_mph, pid_value, control_state.engine_rpm_error); 
