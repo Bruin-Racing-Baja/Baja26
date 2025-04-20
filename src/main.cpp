@@ -392,12 +392,11 @@ void control_function() {
   actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
-  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
 
 
   // TODO: Handle integral-windup; tune and remove magic numbers
   // TODO: Make sign a global variable
-  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -500, 500);
+  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
   if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
     control_state.engine_rpm_error_integral = 0;
   }
@@ -413,9 +412,6 @@ void control_function() {
   }
   */
   actuator.set_position(control_state.position_command);
-  if (control_state.cycle_count % 200 == 0) {
-    Serial.printf("Offset %f, Ref %f, PID %f, Pos Com %f \n", actuator_offset, wheel_mph, pid_value, control_state.engine_rpm_error); 
-  }
 
 
   // Populate control state

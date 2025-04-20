@@ -55,8 +55,8 @@ constexpr float ODRIVE_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if 
 // Driver Interface
 constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
 constexpr u32 BRAKE_MAX_VALUE = 290;                // TODO: UPDATE THIS
-constexpr u32 THROTTLE_MIN_VALUE = 700;            // TODO: UPDATE THIS
-constexpr u32 THROTTLE_MAX_VALUE = 300;            // TODO: UPDATE THIS
+constexpr u32 THROTTLE_MIN_VALUE = 1000;            // TODO: UPDATE THIS
+constexpr u32 THROTTLE_MAX_VALUE = 80;            // TODO: UPDATE THIS
 
 // Actuator
 // NOTE: Pitch is distance / rotation
@@ -91,24 +91,24 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_POS = 0;  // hard stop from odrive tool
+constexpr float ACTUATOR_MAX_POS = 0.0;  // hard stop from odrive tool
 constexpr float ACTUATOR_MIN_POS = -7.0; 
-constexpr float ACTUATOR_OFFSET_LOW = 0; 
-constexpr float ACTUATOR_OFFSET_HIGH = -7;
-constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 5.0;
-constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 15.0;
+constexpr float ACTUATOR_OFFSET_LOW = 0.0; 
+constexpr float ACTUATOR_OFFSET_HIGH = -7.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 25.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.003;   // TUNE 
+constexpr float ACTUATOR_KP = 0.01;   // TUNE 
 constexpr float ACTUATOR_KI = 0.000;   // TUNE
 constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float WHEEL_REF_LOW_RPM = 2000;
+constexpr float WHEEL_REF_LOW_RPM = 1800;
 constexpr float WHEEL_REF_HIGH_RPM = 3300; // potentially move this value to 3100 to get more of power band 
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
 constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
-constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 1.0; 
+constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 500.0; 
 constexpr float ACTUATOR_ENGAGE_BREAKPOINT_RPM = 1000.0; 
 constexpr float ACTUATOR_ENGAGE_SLOPE = ACTUATOR_MAX_POS/ACTUATOR_ENGAGE_BREAKPOINT_RPM; 
 #elif MODE == 0
