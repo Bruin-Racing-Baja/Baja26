@@ -100,9 +100,23 @@ u8 Actuator::set_position(float position) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
+  if (get_outbound_limit() && position >= 0)
+  {
+    if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
+        ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+      return SET_VELOCITY_CAN_ERROR;
+    }
+
+    odrive->set_input_vel(0, 0);
+
+    velocity_mode = true;
+
+    return SET_VELOCITY_OUT_LIMIT_SWITCH_ERROR;
+  }
+
   // TODO: Check which input mode to use
   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
-                                  ODrive::INPUT_MODE_POS_FILTER) != 0) {
+                                  ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
     return SET_POSITION_CAN_ERROR;
   }
 

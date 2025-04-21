@@ -91,9 +91,9 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_POS = 0.0;  // hard stop from odrive tool
+constexpr float ACTUATOR_MAX_POS = 0;  // hard stop from odrive tool
 constexpr float ACTUATOR_MIN_POS = -6.5; 
-constexpr float ACTUATOR_OFFSET_LOW = 0.0; 
+constexpr float ACTUATOR_OFFSET_LOW = 0; 
 constexpr float ACTUATOR_OFFSET_HIGH = -6.5;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 5.0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 25.0;
