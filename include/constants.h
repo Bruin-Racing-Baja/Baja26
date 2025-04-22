@@ -24,7 +24,7 @@ constexpr float INCH_PER_FEET = 12.0;   // inch / feet
 constexpr float ENGINE_COUNTS_PER_ROT = 32; // count / rot
 constexpr float GEAR_COUNTS_PER_ROT = 50;   // count / rot
 
-constexpr float WHEEL_GEAR_COUNTS_PER_ROT = 8; // count / rot
+constexpr float WHEEL_GEAR_COUNTS_PER_ROT = 12; // count / rot
 
 // NOTE: x_to_y ratio is how many rotations of x for 1 rotation of y
 constexpr float GEAR_TO_WHEEL_RATIO = 58.0 / 19.0;                
@@ -277,8 +277,8 @@ constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
 constexpr u8 ENGINE_SENSOR_PIN = 16; 
 constexpr u8 GEARTOOTH_SENSOR_PIN = 27; 
-constexpr u8 L_WHEEL_GEARTOOTH_SENSOR_PIN = 13;
-constexpr u8 R_WHEEL_GEARTOOTH_SENSOR_PIN = 14; 
+constexpr u8 LEFT_WHEEL_SENSOR_PIN = 13;
+constexpr u8 RIGHT_WHEEL_SENSOR_PIN = 14; 
 constexpr u8 ECENTERLOCK_SENSOR_PIN = 15; 
 
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
