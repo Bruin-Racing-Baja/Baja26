@@ -25,7 +25,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
     return HOME_CAN_ERROR;
   }
-
+  /*
   // Move in to engaged limit if we start on outbound limit
   if (get_outbound_limit()) {
     u32 start_time = millis();
@@ -39,7 +39,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
     }
     set_velocity(0);
   }
-
+  */
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
@@ -52,8 +52,8 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
 
   set_velocity(0);
 
-  odrive->set_absolute_position(0);
-
+  odrive->set_absolute_position(-0.25);
+  set_position(0.75);
   return HOME_SUCCCESS;
 }
 
@@ -100,9 +100,23 @@ u8 Actuator::set_position(float position) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
+  if (get_outbound_limit() && position >= 0)
+  {
+    if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
+        ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+      return SET_VELOCITY_CAN_ERROR;
+    }
+
+    odrive->set_input_vel(0, 0);
+
+    velocity_mode = true;
+
+    return SET_VELOCITY_OUT_LIMIT_SWITCH_ERROR;
+  }
+
   // TODO: Check which input mode to use
   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
-                                  ODrive::INPUT_MODE_POS_FILTER) != 0) {
+                                  ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
     return SET_POSITION_CAN_ERROR;
   }
 

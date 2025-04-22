@@ -525,30 +525,30 @@ void control_function() {
   last_engine_rpm_error = filtered_engine_rpm_error;
 
 
-  float actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
-  actuator_offset = CLAMP(actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
+  control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
+  control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
-  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
 
 
   // TODO: Handle integral-windup; tune and remove magic numbers
   // TODO: Make sign a global variable
-  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -500, 500);
+  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
   if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
     control_state.engine_rpm_error_integral = 0;
   }
 
   // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
-  control_state.position_command = actuator_offset + control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
-  float pid_value = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
+  //
+  control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
+  control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
-  
+  /*
   // to not interfere with starting the car 
   if (control_state.engine_rpm < 500) {
     control_state.position_command = 0; 
   }
-
+  */
   actuator.set_position(control_state.position_command);
   if (control_state.cycle_count % 200 == 0) {
     Serial.printf("Offset %f, Ref %f, PID %f, Pos Com %f \n", actuator_offset, wheel_mph, pid_value, control_state.engine_rpm_error); 

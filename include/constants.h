@@ -49,8 +49,8 @@ constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                         
-constexpr float ODRIVE_VEL_LIMIT = 40.0;        // rot / s    //TODO: CHange this to reasonable value
-constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
+constexpr float ODRIVE_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
 constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
 
 //Ecenterlock 
@@ -77,8 +77,8 @@ constexpr u8 NUM_TRIES_ECENTERLOCK = 5;
 // Driver Interface
 constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
 constexpr u32 BRAKE_MAX_VALUE = 290;                // TODO: UPDATE THIS
-constexpr u32 THROTTLE_MIN_VALUE = 700;            // TODO: UPDATE THIS
-constexpr u32 THROTTLE_MAX_VALUE = 300;            // TODO: UPDATE THIS
+constexpr u32 THROTTLE_MIN_VALUE = 1000;            // TODO: UPDATE THIS
+constexpr u32 THROTTLE_MAX_VALUE = 80;            // TODO: UPDATE THIS
 
 // Actuator
 // NOTE: Pitch is distance / rotation
@@ -113,24 +113,25 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_POS = -3;  // hard stop from odrive tool
-constexpr float ACTUATOR_MIN_POS = -10.0; 
-constexpr float ACTUATOR_OFFSET_LOW = -2; 
-constexpr float ACTUATOR_OFFSET_HIGH = -10;
+constexpr float ACTUATOR_MAX_POS = 0;  // hard stop from odrive tool
+constexpr float ACTUATOR_MIN_POS = -6.5; 
+constexpr float ACTUATOR_OFFSET_LOW = 0; 
+constexpr float ACTUATOR_OFFSET_HIGH = -6.5;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 5.0;
-constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 10.0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 25.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.003;   // TUNE 
-constexpr float ACTUATOR_KI = 0.003;   // TUNE
+constexpr float ACTUATOR_KP = 0.005;   // TUNE 
+constexpr float ACTUATOR_KI = 0.000;   // TUNE
+constexpr float ACTUATOR_KD = 0.001;
 constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float WHEEL_REF_LOW_RPM = 1800;
-constexpr float WHEEL_REF_HIGH_RPM = 3500; // potentially move this value to 3100 to get more of power band 
+constexpr float WHEEL_REF_LOW_RPM = 2200;
+constexpr float WHEEL_REF_HIGH_RPM = 3000; // potentially move this value to 3100 to get more of power band 
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
 constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 10;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
-constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 1.0; 
+constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 500.0; 
 constexpr float ACTUATOR_ENGAGE_BREAKPOINT_RPM = 1000.0; 
 constexpr float ACTUATOR_ENGAGE_SLOPE = ACTUATOR_MAX_POS/ACTUATOR_ENGAGE_BREAKPOINT_RPM; 
 #elif MODE == 0
