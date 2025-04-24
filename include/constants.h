@@ -82,7 +82,7 @@ constexpr u32 THROTTLE_MAX_VALUE = 80;            // TODO: UPDATE THIS
 
 // Actuator
 // NOTE: Pitch is distance / rotation
-constexpr float ACTUATOR_PITCH_MM = 5.0;                      // mm / rot
+constexpr float ACTUATOR_PITCH_MM = 4.0;                      // mm / rot
 constexpr float ACTUATOR_PITCH_CM = ACTUATOR_PITCH_MM / 10.0; // cm / rot
 
 constexpr float ACTUATOR_ENGAGE_POS_ROT = 3.5;   // rot
