@@ -36,7 +36,8 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can = true;
+constexpr bool wait_for_can_ecvt = false;
+constexpr bool wait_for_can_ecenterlock = true; 
 constexpr bool using_ecenterlock = true; 
 
 /**** Global Objects ****/
@@ -129,7 +130,15 @@ u8 message_buffer[MESSAGE_BUFFER_SIZE];
 /**** Global Functions ****/
 time_t get_teensy3_time() { return Teensy3Clock.get(); }
 
-void can_parse(const CAN_message_t &msg) { odrive.parse_message(msg); }
+void can_parse(const CAN_message_t &msg) { 
+  u32 parsed_node_id = (msg.id >> 5) & 0x3F;
+  if (parsed_node_id == ODRIVE_NODE_ID) {
+    odrive.parse_message(msg);
+  } else if (parsed_node_id == ECENTERLOCK_ODRIVE_NODE_ID) {
+    ecenterlock_odrive.parse_message(msg);
+  }
+
+}
 
 inline void write_all_leds(u8 state) {
   digitalWrite(LED_1_PIN, state);
@@ -286,18 +295,20 @@ void on_inbound_limit_switch() {
   odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
 }
 
-// Engaged/engaging when sensor is HIGH
-void on_ecenterlock_sensor() {
-  if (digitalRead(ECENTERLOCK_SENSOR_PIN) == LOW) {
-    Serial.printf("Sensor LOW\n");
-    //TODO: Add state variable to handle this 
-  } else {
-    Serial.printf("Sensor HIGH\n");
-  }
-    //TODO: Add state variable to handle this 
-}
+// // Engaged/engaging when sensor is HIGH
+// void on_ecenterlock_sensor() {
+//   if (digitalRead(ECENTERLOCK_SENSOR_PIN) == LOW) {
+//     Serial.printf("Sensor LOW\n");
+//     //TODO: Add state variable to handle this 
+//   } else {
+//     Serial.printf("Sensor HIGH\n");
+//   }
+//     //TODO: Add state variable to handle this 
+// }
 
 void on_ecenterlock_switch_engage() {
+  // ecenterlock.set_velocity(ECENTERLOCK_VELOCITY);
+  // Serial.print("Moving towards 4WD"); 
   if(ecenterlock.get_state() == Ecenterlock::DISENGAGED_2WD) {
     ecenterlock.set_engage(true);
     ecenterlock.change_state(Ecenterlock::WANT_ENGAGE); 
@@ -306,10 +317,17 @@ void on_ecenterlock_switch_engage() {
 
 //TODO: Implement this, need to allocate another pin for this :) 
 void on_ecenterlock_switch_disengage() { 
+  // ecenterlock.set_velocity(-ECENTERLOCK_VELOCITY); 
+  // Serial.print("Moving towards 2WD"); 
   if(ecenterlock.get_state() == Ecenterlock::ENGAGED_4WD) {
     ecenterlock.set_disengage(true); 
     ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE);
   }
+}
+
+void on_ecenterlock_stop() {
+  ecenterlock.set_velocity(0); 
+  Serial.print("Stopped");
 }
 
 inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm) {
@@ -324,7 +342,6 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
   float ecenterlock_position = ecenterlock_odrive.get_pos_rel() - ecenterlock.get_offset(); 
   ecenterlock.set_position(ecenterlock_position); 
 
-
   // State Machine for ECenterlock
   switch(ecenterlock.get_state()) {
     case Ecenterlock::UNHOMED:
@@ -333,14 +350,15 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       break;
   
     case Ecenterlock::DISENGAGED_2WD: 
+      Serial.printf("State: DISENGAGE\n");
       break; 
     
     case Ecenterlock::WANT_ENGAGE: 
+      Serial.printf("State: WANT_ENGAGE\n");
 
       // Pre-Engage Safety Checks! 
-       
       //TODO: what's a good threshold here 
-      if (gear_rpm == 0) {
+      if (gear_rpm < 50) {
         //Case 1: Car is Stopped
         ecenterlock.set_num_tries(3); 
       } else if (gear_rpm - avg_front_rpm > ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE) {
@@ -348,6 +366,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
         ecenterlock.set_num_tries(0); 
         Serial.printf("Ecenterlock will NOT shift: unsafe wheel speed difference"); 
         ecenterlock.change_state(Ecenterlock::DISENGAGED_2WD); 
+        digitalWrite(ECENTERLOCK_SWITCH_LIGHT, LOW); 
       } else {
         //Case 3: Car is moving normally
         ecenterlock.set_num_tries(5); 
@@ -363,9 +382,11 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       break; 
 
     case Ecenterlock::ENGAGED_4WD: 
+      Serial.printf("State: ENGAGED_4WD\n");
       break; 
 
     case Ecenterlock::WANT_DISENGAGE: 
+      Serial.printf("State: WANT_DISENGAGE\n");
       ecenterlock.set_velocity(-ECENTERLOCK_VELOCITY);
       ecenterlock.change_state(Ecenterlock::DISENGAGING);
       break;
@@ -379,7 +400,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       break; 
     
     case Ecenterlock::ENGAGING:
-
+        Serial.printf("State: ENGAGING\n");
         Serial.printf("Ecenterlock State: Engaging!, %f, %f\n", ecenterlock.get_position(), ecenterlock.get_prev_position()); 
         // TODO: Should this be checking position
         if (ecenterlock.get_position() == ecenterlock.get_prev_position()) {
@@ -387,30 +408,48 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
           // Stopped b/c Engaged 
           // TODO: Do we want to have that clearance difference there just in case some slipping happens? 
           // TODO: Add sensor here? 
-          if (ecenterlock.get_position() >= ECENTERLOCK_ENGAGED_POSITION - 0.05) {
+
+          if (ecenterlock.get_position() <= ECENTERLOCK_ENGAGED_POSITION + 0.05) {
             Serial.printf("Ecenterlock Engaged %f\n", ecenterlock.get_position()); 
             ecenterlock.set_velocity(0); 
             ecenterlock.change_state(Ecenterlock::ENGAGED_4WD); 
+            digitalWrite(ECENTERLOCK_SWITCH_LIGHT, HIGH); 
           } else { //Stopped in Edge Case 
-            ecenterlock.set_velocity(-ECENTERLOCK_VELOCITY); 
-            ecenterlock.change_state(Ecenterlock::DISENGAGING); 
             
+            ecenterlock.set_velocity(-ECENTERLOCK_VELOCITY);
             u8 tries_left = ecenterlock.get_num_tries() - 1; 
-            if (tries_left) {
-              ecenterlock.set_engage(true); 
+            if (tries_left > 0) {
               ecenterlock.set_num_tries(tries_left); 
-            }    
+              ecenterlock.change_state(Ecenterlock::ENGAGE_STEPBACK);
+              cycles_to_wait_for_vel = 50; 
+            } else {
+              ecenterlock.change_state(Ecenterlock::DISENGAGING); 
+            }  
           }
         }
+      break; 
+    
+    case Ecenterlock::ENGAGE_STEPBACK: 
+      if (cycles_to_wait_for_vel == 0) {
+        cycles_to_wait_for_vel = 10; 
+        ecenterlock.set_velocity(ECENTERLOCK_VELOCITY); 
+        ecenterlock.change_state(Ecenterlock::WAITING_FOR_VEL); 
+      } else {
+        cycles_to_wait_for_vel--; 
+      }
+      break;
 
     case Ecenterlock::DISENGAGING: 
+      Serial.printf("State: DISENGAGING\n");
       // Serial.printf("Ecenterlock State: Disengaging\n"); 
       // TODO: Idk if we need all these checks, a bit redundant 
-      if (ecenterlock.get_position() == ecenterlock.get_prev_position() && ecenterlock.get_position() <= 0.05 && !digitalRead(ECENTERLOCK_SENSOR_PIN)) {
+      if (ecenterlock.get_position() == ecenterlock.get_prev_position() && ecenterlock.get_position() <= 0.05) {
         Serial.printf("Ecenterlock Disengaged! %f n", ecenterlock.get_position()); 
         ecenterlock.set_velocity(0); 
         ecenterlock.change_state(Ecenterlock::DISENGAGED_2WD); 
+        digitalWrite(ECENTERLOCK_SWITCH_LIGHT, LOW); 
       }
+      break; 
   }
      
   control_cycle_count++;
@@ -543,16 +582,15 @@ void control_function() {
   control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
   control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
+
+  actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
+
   /*
   // to not interfere with starting the car 
   if (control_state.engine_rpm < 500) {
     control_state.position_command = 0; 
   }
   */
-  actuator.set_position(control_state.position_command);
-  if (control_state.cycle_count % 200 == 0) {
-    Serial.printf("Offset %f, Ref %f, PID %f, Pos Com %f \n", actuator_offset, wheel_mph, pid_value, control_state.engine_rpm_error); 
-  }
   
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
@@ -800,9 +838,14 @@ void setup() {
   pinMode(LED_4_PIN, OUTPUT);
   pinMode(LED_5_PIN, OUTPUT);
 
+  pinMode(ECENTERLOCK_SWITCH_LIGHT, OUTPUT); 
+
   for (size_t i = 0; i < sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]); i++) {
     pinMode(BUTTON_PINS[i], INPUT_PULLUP);
   }
+
+  pinMode(ECENTERLOCK_SWITCH_ENGAGE, INPUT_PULLUP);
+  pinMode(ECENTERLOCK_SWITCH_DISENGAGE, INPUT_PULLUP);
 
   pinMode(ENGINE_SENSOR_PIN, INPUT);
   pinMode(GEARTOOTH_SENSOR_PIN, INPUT);
@@ -873,6 +916,13 @@ void setup() {
   // Attach sensor interrupts
   attachInterrupt(ENGINE_SENSOR_PIN, on_engine_sensor, FALLING);
   attachInterrupt(GEARTOOTH_SENSOR_PIN, on_geartooth_sensor, FALLING);
+  attachInterrupt(LEFT_WHEEL_SENSOR_PIN, on_lw_geartooth_sensor, FALLING); 
+  attachInterrupt(RIGHT_WHEEL_SENSOR_PIN, on_rw_geartooth_sensor, FALLING); 
+  // attachInterrupt(ECENTERLOCK_SENSOR_PIN, on_ecenterlock_sensor, FALLING); 
+
+  attachInterrupt(ECENTERLOCK_SWITCH_ENGAGE, on_ecenterlock_switch_engage, FALLING); 
+  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, FALLING); 
+  attachInterrupt(BUTTON_PINS[2], on_ecenterlock_stop, FALLING); 
 
   // Attach limit switch interrupts
   attachInterrupt(LIMIT_SWITCH_OUT_PIN, on_outbound_limit_switch, FALLING);
@@ -888,10 +938,20 @@ void setup() {
   flexcan_bus.onReceive(can_parse);
 
   // Wait for ODrive can connection if enabled
-  if (wait_for_can) {
+  if (wait_for_can_ecvt) {
     u32 led_flash_time_ms = 100;
     while (odrive.get_time_since_heartbeat_ms() > 100) {
       write_all_leds(millis() % (led_flash_time_ms * 2) < led_flash_time_ms);
+      delay(100);
+    }
+  }
+  write_all_leds(LOW);
+
+  if (wait_for_can_ecenterlock) {
+    u32 led_flash_time_ms = 300;
+    while (ecenterlock_odrive.get_time_since_heartbeat_ms() > 100) {
+      write_all_leds(millis() % (led_flash_time_ms * 2) < led_flash_time_ms);
+      digitalWrite(ECENTERLOCK_SWITCH_LIGHT, millis() % (led_flash_time_ms * 2) < led_flash_time_ms);
       delay(100);
     }
   }
@@ -913,19 +973,19 @@ void setup() {
   // TODO: Why do we need delay?
   delay(3000);
 
-  // Run actuator homing sequence
-  digitalWrite(LED_2_PIN, HIGH); 
-  u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
-  if (actuator_home_status != 0) {
-    Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
-  } else {
-    digitalWrite(LED_2_PIN, LOW);
-  }
+  // // Run actuator homing sequence
+  // digitalWrite(LED_2_PIN, HIGH); 
+  // u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
+  // if (actuator_home_status != 0) {
+  //   Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
+  // } else {
+  //   digitalWrite(LED_2_PIN, LOW);
+  // }
 
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
     digitalWrite(LED_3_PIN, HIGH);
-    u8 ecenterlock_home_status = ecenterlock.home(ACTUATOR_HOME_TIMEOUT_MS);
+    u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
     if (ecenterlock_home_status != 0) {
       Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
     } else {
@@ -980,7 +1040,7 @@ void loop() {
   if (sd_initialized && !logging_disconnected) {
     for (size_t buffer_num = 0; buffer_num < 2; buffer_num++) {
       if (double_buffer[buffer_num].full) {
-        Serial.printf("Info: Writing buffer %d to SD\n", buffer_num);
+        // Serial.printf("Info: Writing buffer %d to SD\n", buffer_num);
         size_t num_bytes_written = log_file.write(
             double_buffer[buffer_num].buffer, double_buffer[buffer_num].idx);
         if (num_bytes_written == 0) {

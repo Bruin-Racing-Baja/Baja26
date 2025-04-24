@@ -63,10 +63,10 @@ constexpr float ECENTERLOCK_ENGAGE_POS_ROT = 4.0;   // ROT?
 constexpr float ECENTERLOCK_ENGAGE_POS_CM =
     ECENTERLOCK_ENGAGE_POS_ROT * ECENTERLOCK_PITCH_CM; // cm
  
-constexpr float ECENTERLOCK_ENGAGED_POSITION = 2.1; 
-constexpr float ECENTERLOCK_VELOCITY = 6;     // rot / s 
+constexpr float ECENTERLOCK_ENGAGED_POSITION = -3.0; // TODO: potentially change this 
+constexpr float ECENTERLOCK_VELOCITY = -6;     // rot / s 
 
-constexpr float ECENTERLOCK_HOME_VEL = 6;
+constexpr float ECENTERLOCK_HOME_VEL = -6;
 constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
 
 constexpr float ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE = 100; 
@@ -286,7 +286,10 @@ constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
 
 constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 24; 
-constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 25; 
+constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 38; 
+constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
+
+constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 10000; 
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;  

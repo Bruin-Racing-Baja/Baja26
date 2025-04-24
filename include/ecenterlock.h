@@ -17,7 +17,8 @@ public:
     DISENGAGING, 
     WANT_ENGAGE,
     WANT_DISENGAGE, 
-    WAITING_FOR_VEL
+    WAITING_FOR_VEL, 
+    ENGAGE_STEPBACK
   };
 
   static const u8 SET_TORQUE_SUCCESS = 0;
