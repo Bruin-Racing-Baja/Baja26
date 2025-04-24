@@ -28,7 +28,7 @@ public:
   u8 home_encoder(u32 timeout_ms);
 
   u8 set_velocity(float velocity);
-  u8 set_position(float position);
+  u8 set_position(float position, float position_estimate);
 
   bool get_inbound_limit();
   bool get_outbound_limit();
