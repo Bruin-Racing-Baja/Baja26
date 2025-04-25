@@ -36,8 +36,8 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can_ecvt = false;
-constexpr bool wait_for_can_ecenterlock = true; 
+constexpr bool wait_for_can_ecvt = true;
+constexpr bool wait_for_can_ecenterlock = false; 
 constexpr bool using_ecenterlock = false; 
 int cycles_to_wait_for_vel = 10; 
 
@@ -546,17 +546,63 @@ void control_function() {
   }
   control_state.right_front_wheel_rpm = right_front_wheel_rpm;
 
-  // Controller
+  // Controller (Position)
+  // control_state.target_rpm =
+  //     (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
+  //     WHEEL_REF_LOW_RPM;
+  // control_state.target_rpm =
+  //     CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
+
+  // // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
+  // // TODO: Make sign a global variable
+  // control_state.engine_rpm_error =
+  //     (control_state.target_rpm - control_state.filtered_engine_rpm);
+
+  // float filtered_engine_rpm_error =
+  //     engine_rpm_derror_filter.update(control_state.engine_rpm_error);
+
+  // control_state.engine_rpm_derror =
+  //     (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
+  // last_engine_rpm_error = filtered_engine_rpm_error;
+
+  // control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
+  // control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
+
+  // control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
+
+  // // TODO: Handle integral-windup; tune and remove magic numbers
+  // // TODO: Make sign a global variable
+  // control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
+  // if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
+  //   control_state.engine_rpm_error_integral = 0;
+  // }
+
+  // // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
+  // //
+  // control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
+  // control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
+
+  // // to not interfere with starting the car 
+  // if (control_state.engine_rpm < 1600) {
+  //   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_HARDSTOP); 
+  // } else {
+  //   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
+  // }
+
+  // actuator.set_position(control_state.position_command);
+
+  // Controller (Velocity)
+
   control_state.target_rpm =
       (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
       WHEEL_REF_LOW_RPM;
   control_state.target_rpm =
       CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
 
-  // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
-  // TODO: Make sign a global variable
+  //control_state.target_rpm = ENGINE_TARGET_RPM;
+  
   control_state.engine_rpm_error =
-      (control_state.target_rpm - control_state.filtered_engine_rpm);
+      control_state.filtered_engine_rpm - control_state.target_rpm;
 
   float filtered_engine_rpm_error =
       engine_rpm_derror_filter.update(control_state.engine_rpm_error);
@@ -565,33 +611,26 @@ void control_function() {
       (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
   last_engine_rpm_error = filtered_engine_rpm_error;
 
-  control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
-  control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
+  control_state.velocity_mode = true;
 
-  control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
+  control_state.velocity_command =
+      control_state.engine_rpm_error * ACTUATOR_KP +
+      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD);
 
-  // TODO: Handle integral-windup; tune and remove magic numbers
-  // TODO: Make sign a global variable
-  control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
-  if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
-    control_state.engine_rpm_error_integral = 0;
-  }
-
-  // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
-  //
-  control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
-  control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
-
-  // to not interfere with starting the car 
-  if (control_state.engine_rpm < 1600) {
-    control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_HARDSTOP); 
+  // TODO: Move this logic to actuator ?
+  if (odrive.get_pos_estimate() < ACTUATOR_SLOW_INBOUND_REGION_ROT) {
+    control_state.velocity_command =
+        CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
+              ACTUATOR_SLOW_INBOUND_VEL);
   } else {
-    control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
+    control_state.velocity_command =
+        CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
+              ACTUATOR_FAST_INBOUND_VEL);
   }
 
+  actuator.set_velocity(-control_state.velocity_command);
+  // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
 
-  actuator.set_position(control_state.position_command);
-  
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
     ecenterlock_control_function(gear_rpm, right_front_wheel_rpm, left_front_wheel_rpm); 
@@ -983,15 +1022,15 @@ void setup() {
   }
 
   // // Run ecenterlock homing sequence
-  // if (using_ecenterlock) {
-  //   digitalWrite(LED_3_PIN, HIGH);
-  //   u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
-  //   if (ecenterlock_home_status != 0) {
-  //     Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
-  //   } else {
-  //     digitalWrite(LED_3_PIN, LOW); 
-  //   }
-  // }
+  if (using_ecenterlock) {
+    digitalWrite(LED_3_PIN, HIGH);
+    u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
+    if (ecenterlock_home_status != 0) {
+      Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
+    } else {
+      digitalWrite(LED_3_PIN, LOW); 
+    }
+  }
   
   // Set interrupt priorities
   // TODO: Figure out proper ISR priority levels

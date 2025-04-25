@@ -110,7 +110,7 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 // 6: Penn Maneuverability NOTE: DONE
 // 7: Position Control
 
-#define MODE 7
+#define MODE 3
 
 #if MODE == 7
 constexpr float ACTUATOR_MAX_HARDSTOP = 0;  // hard stop from odrive tool
@@ -126,9 +126,9 @@ constexpr float ACTUATOR_KI = 0.000;   // TUNE
 constexpr float ACTUATOR_KD = 0.000;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2200;
-constexpr float WHEEL_REF_HIGH_RPM = 3000; // potentially move this value to 3100 to get more of power band 
+constexpr float WHEEL_REF_HIGH_RPM = 3600; // potentially move this value to 3100 to get more of power band 
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 10;
+constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
@@ -173,7 +173,7 @@ constexpr float ACTUATOR_KP = 0.02;
 constexpr float ACTUATOR_KD = 0.002;
 constexpr float THROTTLE_KD = 10.0;
 constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float ENGINE_TARGET_RPM = -1.0; // rpm
+constexpr float ENGINE_TARGET_RPM = 3000; // rpm (was -1)
 constexpr float WHEEL_REF_LOW_RPM = 2000;
 constexpr float WHEEL_REF_HIGH_RPM = 3300;
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
