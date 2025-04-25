@@ -52,6 +52,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
 
   set_velocity(0);
 
+
   return HOME_SUCCCESS;
 }
 
@@ -98,8 +99,7 @@ u8 Actuator::set_position(float position, float position_estimate) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  if (get_outbound_limit() || get_inbound_limit() || position >= ACTUATOR_MAX_POS || position <= ACTUATOR_MIN_POS 
-  || position_estimate <=  ACTUATOR_MIN_POS || position_estimate >= ACTUATOR_MAX_POS ) {
+  if ((get_outbound_limit() && ACTUATOR_MAX_POS <= position) || (get_inbound_limit() && position <= ACTUATOR_MIN_POS) ||  position <= ACTUATOR_MIN_POS || ACTUATOR_MAX_POS <= position) {
     if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
         ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
       return SET_VELOCITY_CAN_ERROR;

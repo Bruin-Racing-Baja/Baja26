@@ -38,7 +38,7 @@ constexpr OperatingMode operating_mode = OperatingMode::NORMAL;
 constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can_ecvt = false;
 constexpr bool wait_for_can_ecenterlock = true; 
-constexpr bool using_ecenterlock = true; 
+constexpr bool using_ecenterlock = false; 
 
 /**** Global Objects ****/
 IntervalTimer timer;
@@ -973,25 +973,25 @@ void setup() {
   // TODO: Why do we need delay?
   delay(3000);
 
-  // // Run actuator homing sequence
-  // digitalWrite(LED_2_PIN, HIGH); 
-  // u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
-  // if (actuator_home_status != 0) {
-  //   Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
-  // } else {
-  //   digitalWrite(LED_2_PIN, LOW);
-  // }
-
-  // Run ecenterlock homing sequence
-  if (using_ecenterlock) {
-    digitalWrite(LED_3_PIN, HIGH);
-    u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
-    if (ecenterlock_home_status != 0) {
-      Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
-    } else {
-      digitalWrite(LED_3_PIN, LOW); 
-    }
+  // Run actuator homing sequence
+  digitalWrite(LED_2_PIN, HIGH); 
+  u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
+  if (actuator_home_status != 0) {
+    Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
+  } else {
+    digitalWrite(LED_2_PIN, LOW);
   }
+
+  // // Run ecenterlock homing sequence
+  // if (using_ecenterlock) {
+  //   digitalWrite(LED_3_PIN, HIGH);
+  //   u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
+  //   if (ecenterlock_home_status != 0) {
+  //     Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
+  //   } else {
+  //     digitalWrite(LED_3_PIN, LOW); 
+  //   }
+  // }
   
   // Set interrupt priorities
   // TODO: Figure out proper ISR priority levels
