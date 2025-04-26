@@ -292,7 +292,7 @@ void on_engage_limit_switch() {
 }
 
 void on_inbound_limit_switch() {
-  odrive.set_absolute_position(15.0);
+  //odrive.set_absolute_position(15.0);
   odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
 }
 
@@ -615,10 +615,11 @@ void control_function() {
   control_state.velocity_mode = true;
 
   control_state.velocity_command =
-      control_state.engine_rpm_error * ACTUATOR_KP +
-      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD);
+      -1 * (control_state.engine_rpm_error * ACTUATOR_KP +
+      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD));
 
   // TODO: Move this logic to actuator ?
+  /*
   if (odrive.get_pos_estimate() < ACTUATOR_SLOW_INBOUND_REGION_ROT) {
     control_state.velocity_command =
         CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
@@ -628,8 +629,9 @@ void control_function() {
         CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
               ACTUATOR_FAST_INBOUND_VEL);
   }
-
-  actuator.set_velocity(-control_state.velocity_command);
+  */
+  //Negation happens above
+  actuator.set_velocity(control_state.velocity_command);
   // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
 
   // Ecenterlock Control Function 
