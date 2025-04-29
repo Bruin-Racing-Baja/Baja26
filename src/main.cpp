@@ -618,7 +618,7 @@ void control_function() {
   control_state.velocity_mode = true;
 
   control_state.velocity_command =
-      -1 * (control_state.engine_rpm_error * ACTUATOR_KP +
+       (control_state.engine_rpm_error * ACTUATOR_KP +
       MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD));
 
   // TODO: Move this logic to actuator ?
@@ -861,8 +861,9 @@ void debug_mode() {
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
   if (control_cycle_count % 20 == 0) {
-    Serial.printf("Engine RPM: %f\n", control_state.engine_rpm); 
-    Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+    //Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
+    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
+    //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   //Serial.printf("Engine Count %d\n", engine_count);
   // Serial.printf("Gear Count %d\n", gear_count);
@@ -983,6 +984,7 @@ void setup() {
   flexcan_bus.onReceive(can_parse);
 
   // Wait for ODrive can connection if enabled
+  
   if (wait_for_can_ecvt) {
     u32 led_flash_time_ms = 100;
     while (odrive.get_time_since_heartbeat_ms() > 100) {
@@ -1019,6 +1021,7 @@ void setup() {
   delay(3000);
 
   // Run actuator homing sequence
+  
   digitalWrite(LED_2_PIN, HIGH); 
   u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
   if (actuator_home_status != 0) {

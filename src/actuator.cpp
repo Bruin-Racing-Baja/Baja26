@@ -41,10 +41,14 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   //   set_velocity(0);
   // }
 
+  //Engage limit switch not working
+  //odrive->set_input_vel(-ACTUATOR_HOME_VELOCITY, 0);
+  set_velocity(ACTUATOR_HOME_VELOCITY);
+  delay(1000);
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
-    set_velocity(ACTUATOR_HOME_VELOCITY);
+    set_velocity(-ACTUATOR_HOME_VELOCITY);
     if ((millis() - start_time) > timeout_ms) {
       return HOME_TIMEOUT_ERROR;
     }
@@ -70,12 +74,12 @@ u8 Actuator::set_velocity(float velocity) {
     return SET_VELOCITY_CAN_ERROR;
   }
 
-  if (get_inbound_limit() && velocity < 0) {
+  if (get_inbound_limit() && velocity > 0) {
     odrive->set_input_vel(0, 0);
     return SET_VELOCITY_IN_LIMIT_SWITCH_ERROR;
   }
 
-  if (get_outbound_limit() && velocity > 0) {
+  if (get_outbound_limit() && velocity < 0) {
     odrive->set_input_vel(0, 0);
     return SET_VELOCITY_OUT_LIMIT_SWITCH_ERROR;
   }
