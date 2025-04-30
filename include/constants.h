@@ -170,8 +170,8 @@ constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = -1.0;
 constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = -1.0;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE = -1.0;
 #elif MODE == 3
-constexpr float ACTUATOR_KP = 0.02;
-constexpr float ACTUATOR_KD = 0.002;
+constexpr float ACTUATOR_KP = 0.01;
+constexpr float ACTUATOR_KD = 0.004;
 constexpr float THROTTLE_KD = 10.0;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float ENGINE_TARGET_RPM = 3000; // rpm (was -1)
@@ -273,10 +273,9 @@ constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
 
-// in and engage switched
-constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
+constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
