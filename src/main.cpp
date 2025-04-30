@@ -37,7 +37,7 @@ enum class OperatingMode {
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can_ecvt = true;
-constexpr bool using_ecenterlock = true; 
+constexpr bool using_ecenterlock = false; 
 int cycles_to_wait_for_vel = 20; 
 
 /**** Global Objects ****/
@@ -689,7 +689,7 @@ void button_shift_mode() {
                 actuator.get_outbound_limit(), actuator.get_engage_limit(),
                 actuator.get_inbound_limit());
 
-  float velocity = 10.0;
+  float velocity = 50.0;
   if (button_pressed[0]) {
     odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
   } else if (button_pressed[1]) {
@@ -858,8 +858,8 @@ void debug_mode() {
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
   if (control_cycle_count % 20 == 0) {
-    //Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
-    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
+    Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
+   // Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
     //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   //Serial.printf("Engine Count %d\n", engine_count);
@@ -987,6 +987,7 @@ void setup() {
       delay(100);
     }
   }
+    
   write_all_leds(LOW);
 
   if (using_ecenterlock) {
@@ -1024,7 +1025,7 @@ void setup() {
   } else {
     digitalWrite(LED_2_PIN, LOW);
   }
-
+  
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
     digitalWrite(LED_3_PIN, HIGH);
