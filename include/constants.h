@@ -50,7 +50,7 @@ constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                         
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
-constexpr float ODRIVE_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
 constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
 
 //Ecenterlock 
