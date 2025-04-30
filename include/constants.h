@@ -50,7 +50,7 @@ constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                         
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
-constexpr float ODRIVE_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
 constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
 
 //Ecenterlock 
@@ -272,9 +272,11 @@ constexpr u8 LED_3_PIN = 9; // D2 on PCB
 constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
-constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
+
+// in and engage switched
+constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
