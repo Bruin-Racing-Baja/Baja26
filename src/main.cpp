@@ -296,6 +296,7 @@ void on_inbound_limit_switch() {
 }
 
 void on_ecenterlock_switch_engage() {
+  Serial.print("Engage Interrupt\n");
   if(ecenterlock.get_state() == Ecenterlock::DISENGAGED_2WD) {
     ecenterlock.change_state(Ecenterlock::WANT_ENGAGE); 
   }
@@ -707,6 +708,9 @@ void button_shift_mode() {
 void debug_mode() {
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
   control_cycle_count++;
+
+  if (control_cycle_count % 10 == 0)
+    Serial.printf("Engage: %d, Disengage: %d\n", digitalRead(ECENTERLOCK_SWITCH_ENGAGE), digitalRead(ECENTERLOCK_SWITCH_DISENGAGE)); 
 
   // if(digitalRead(LIMIT_SWITCH_OUT_PIN) == LOW) {
   //   digitalWrite(LED_5_PIN, HIGH); 
