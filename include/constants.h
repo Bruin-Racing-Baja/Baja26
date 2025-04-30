@@ -72,7 +72,8 @@ constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
 constexpr float ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE = 100; 
 
 constexpr float ECENTERLOCK_TORQUE = 0.0899; // Nm 
-constexpr u8 NUM_TRIES_ECENTERLOCK = 5; 
+constexpr u8 NUM_TRIES_ECENTERLOCK = 5;
+constexpr u8 ECENTERLOCK_WAIT_CYCLES = 50;
 
 // Driver Interface
 constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
@@ -290,7 +291,7 @@ constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 24;
 constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 38; 
 constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
 
-constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 10000; 
+constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 5000; 
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;  

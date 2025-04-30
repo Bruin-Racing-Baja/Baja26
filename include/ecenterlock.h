@@ -17,8 +17,8 @@ public:
     DISENGAGING, 
     WANT_ENGAGE,
     WANT_DISENGAGE, 
-    WAITING_FOR_VEL_ENGAGE, 
-    WAITING_FOR_VEL_DISENGAGE,
+    PRE_ENGAGING, 
+    PRE_DISENGAGING,
     ENGAGE_STEPBACK
   };
 
@@ -57,6 +57,7 @@ public:
   float get_prev_position() { return prev_position; }
   u8 get_num_tries() { return num_tries; }
 
+  u8 cycles_since_stopped; 
 
 private:
   bool torque_mode;

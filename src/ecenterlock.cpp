@@ -8,16 +8,12 @@
  * Constructor for the actuator
  * @param odrive Pointer to ODrive object
  */
-Ecenterlock::Ecenterlock(ODrive *odrive) : odrive(odrive), current_state(UNHOMED), engage(false), disengage(false), num_tries(0) {}
+Ecenterlock::Ecenterlock(ODrive *odrive) : odrive(odrive), current_state(UNHOMED), engage(false), disengage(false), num_tries(0), cycles_since_stopped(0) {}
 
 /**
  * Instructs ODrive to attempt ECenterlock homing
  * @return 0 if successful
  */
-// TODO: Fix for when the motor gets stuck, just stays stuck 
-// my guess is that since the set_velocity is being call in the loop 
-// it doesn't get a chance to increase torque and push past barrier...
-// could be a problem, mostly when centerlock is stationary 
 u8 Ecenterlock::home(u32 timeout_ms) {
   float start_time = millis(); 
   Serial.printf("Entering Homing Sequence\n"); 
@@ -27,38 +23,28 @@ u8 Ecenterlock::home(u32 timeout_ms) {
   }
 
   set_velocity(-ECENTERLOCK_HOME_VEL);
-  
-  float prev_pos = -1; 
   float cur_pos = 0; 
-  // while the shift fork is still moving, keep homing to back wall 
-  // digitalRead(ECENTERLOCK_SENSOR_PIN) == 1
 
-  // Assume we have the car in 2WD
-  // Just shift back for N number of loop iterations 
-
-//prev_pos != cur_pos
   while ((millis() - start_time) < timeout_ms) {
-    // if ((millis() - start_time) > timeout_ms) {
-    //   return HOME_TIMEOUT_ERROR;
-    // }
-
     odrive->request_nonstand_pos_rel(); 
     set_velocity(-ECENTERLOCK_HOME_VEL); 
     delay(100); 
-    // prev_pos = cur_pos; 
+
     cur_pos = odrive->get_pos_rel();
-    Serial.printf("%f, %d\n", cur_pos, digitalRead(ECENTERLOCK_SENSOR_PIN));
+    Serial.printf("%f\n", cur_pos);
   }
 
   set_velocity(0); 
-
   position = 0; 
   pos_rel_offset = cur_pos; 
 
-  Serial.printf("ECenterlock Homed with Offset %f\n", pos_rel_offset); 
+  if (odrive->set_axis_state(ODrive::AXIS_STATE_IDLE) != 0) {
+    return HOME_CAN_ERROR;
+  }
 
   change_state(DISENGAGED_2WD); 
-  Serial.printf("Ecenterlock Homed!\n");
+  Serial.printf("ECenterlock Homed with Offset %f\n", pos_rel_offset); 
+
   return HOME_SUCCESS; 
 }
 
