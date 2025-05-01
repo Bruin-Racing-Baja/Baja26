@@ -37,7 +37,7 @@ enum class OperatingMode {
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can_ecvt = true;
-constexpr bool using_ecenterlock = false; 
+constexpr bool using_ecenterlock = true; 
 int cycles_to_wait_for_vel = 20; 
 
 /**** Global Objects ****/
@@ -313,10 +313,11 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
   // float avg_front_rpm = ((left_wheel_rpm + right_wheel_rpm) / 2);
   float avg_front_rpm = right_wheel_rpm; //TODO: if left wheel speed sensor is not working
   // GRANT: Check again
-  ecenterlock_odrive.request_nonstand_pos_rel(); 
+  // ecenterlock_odrive.request_nonstand_pos_rel(); 
   ecenterlock.set_prev_position(ecenterlock.get_position()); 
 
-  float ecenterlock_position = ecenterlock_odrive.get_pos_rel() - ecenterlock.get_offset(); // TODO: Check if should add of subtract offset 
+  //float ecenterlock_position = ecenterlock_odrive.get_pos_rel() - ecenterlock.get_offset(); // TODO: Check if should add of subtract offset
+  float ecenterlock_position = ecenterlock_odrive.get_pos_estimate();  
   ecenterlock.set_position(ecenterlock_position); 
 
   // State Machine for Centerlock
@@ -330,6 +331,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
 
     case Ecenterlock::ENGAGED_4WD: 
       break;
+
     case Ecenterlock::WANT_ENGAGE: 
       // Pre-Engage Safety Checks!
       // GRANT: Fix units maybe
@@ -358,6 +360,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
     case Ecenterlock::WANT_DISENGAGE: 
       Serial.printf("State: WANT_DISENGAGE\n");
       cycles_to_wait_for_vel = ECENTERLOCK_WAIT_CYCLES; 
+      ecenterlock.set_velocity(-ECENTERLOCK_VELOCITY);
       ecenterlock.change_state(Ecenterlock::PRE_DISENGAGING);
       break;
     
@@ -393,10 +396,13 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       }
 
       if (ecenterlock.cycles_since_stopped > 10) { 
+        ecenterlock.cycles_since_stopped = 0; 
         // TODO: Do we want to have that clearance difference there just in case some slipping happens? 
-        if (ecenterlock.get_position() <= ECENTERLOCK_ENGAGED_POSITION + 0.05) { 
+        if (ecenterlock.get_position() <= ECENTERLOCK_ENGAGED_POSITION) { 
           // Case 1: Successfully Engaged!
           ecenterlock.set_velocity(0); 
+          ecenterlock_odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
+          Serial.printf("State: ENGAGED_4WD\n");
           ecenterlock.change_state(Ecenterlock::ENGAGED_4WD); 
           digitalWrite(ECENTERLOCK_SWITCH_LIGHT, HIGH);
         } else {  
@@ -420,7 +426,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       break; 
     
     case Ecenterlock::ENGAGE_STEPBACK: 
-      Serial.print("State: ENGAGE_STEPBACK\n");
+      Serial.printf("State: ENGAGE_STEPBACK, %f\n", ecenterlock.get_position());
       if (cycles_to_wait_for_vel <= 0) {
         cycles_to_wait_for_vel = ECENTERLOCK_WAIT_CYCLES; 
         ecenterlock.set_velocity(ECENTERLOCK_VELOCITY); 
@@ -429,7 +435,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
         cycles_to_wait_for_vel--; 
       }
       break;
-
+ 
     case Ecenterlock::DISENGAGING: 
       Serial.printf("State: DISENGAGING, %f\n", ecenterlock.get_position());
       
@@ -440,9 +446,12 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
         ecenterlock.cycles_since_stopped = 0; 
       }
 
-      if (ecenterlock.cycles_since_stopped > 10 && ecenterlock.get_position() <= 0.05) {
+      if (ecenterlock.cycles_since_stopped > 10 && ecenterlock.get_position() > -0.5) {
+        ecenterlock.cycles_since_stopped = 0; 
         ecenterlock.set_velocity(0); 
+        ecenterlock_odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
         ecenterlock.change_state(Ecenterlock::DISENGAGED_2WD); 
+        Serial.printf("State: DISENGAGED_2WD\n"); 
         digitalWrite(ECENTERLOCK_SWITCH_LIGHT, LOW); 
       }
       break; 

@@ -63,7 +63,7 @@ constexpr float ECENTERLOCK_ENGAGE_POS_ROT = 4.0;   // ROT?
 constexpr float ECENTERLOCK_ENGAGE_POS_CM =
     ECENTERLOCK_ENGAGE_POS_ROT * ECENTERLOCK_PITCH_CM; // cm
  
-constexpr float ECENTERLOCK_ENGAGED_POSITION = -3.0; // TODO: potentially change this 
+constexpr float ECENTERLOCK_ENGAGED_POSITION = -4.0; // TODO: potentially change this 
 constexpr float ECENTERLOCK_VELOCITY = -6;     // rot / s 
 
 constexpr float ECENTERLOCK_HOME_VEL = -6;
@@ -271,7 +271,6 @@ constexpr u8 LED_2_PIN = 8; // D1 on PCB
 constexpr u8 LED_3_PIN = 9; // D2 on PCB
 constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
-
 
 constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;

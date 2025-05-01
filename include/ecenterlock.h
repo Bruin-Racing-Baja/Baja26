@@ -46,7 +46,7 @@ public:
   void set_prev_position(float position) { prev_position = position; }
   void set_engage(bool engage) { this->engage = engage; }
   void set_disengage(bool disengage) { this->disengage = disengage; }
-  void set_num_tries(bool tries) { num_tries = tries; }
+  void set_num_tries(int tries) { num_tries = tries; }
 
   bool get_outbound_limit();
   State get_state() { return current_state; }
