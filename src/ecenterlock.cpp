@@ -45,7 +45,7 @@ u8 Ecenterlock::home(u32 timeout_ms) {
 
   change_state(DISENGAGED_2WD); 
   Serial.printf("ECenterlock Homed with Offset %f\n", pos_rel_offset); 
-
+  odrive->set_axis_state(ODrive::AXIS_STATE_IDLE);
   return HOME_SUCCESS; 
 }
 

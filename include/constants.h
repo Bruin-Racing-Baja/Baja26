@@ -50,7 +50,8 @@ constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 // ODrive
 constexpr u8 ODRIVE_NODE_ID = 0x3;                         
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
-constexpr float ODRIVE_CURRENT_SOFT_MAX = 30.0; // A          // TODO: Check if this is the right value 
+constexpr float ODRIVE_ECVT_CURRENT_SOFT_MAX = 30.0;
+constexpr float ODRIVE_ECENT_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
 constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
 
 //Ecenterlock 
@@ -287,8 +288,8 @@ constexpr u8 ECENTERLOCK_SENSOR_PIN = 15;
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
 
-constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 2; //38
-constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 3; // 24
+constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 38; //38
+constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 24; // 24
 constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
 
 constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 5000; 

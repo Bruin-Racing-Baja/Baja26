@@ -639,7 +639,11 @@ void control_function() {
   //Negation happens above
   actuator.set_velocity(control_state.velocity_command);
   // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
-
+  if (control_cycle_count % 20 == 0) {
+    //Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
+    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
+    //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+  }
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
     ecenterlock_control_function(gear_rpm, right_front_wheel_rpm, left_front_wheel_rpm); 
@@ -718,8 +722,8 @@ void debug_mode() {
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
   control_cycle_count++;
 
-  if (control_cycle_count % 10 == 0)
-    Serial.printf("Engage: %d, Disengage: %d\n", digitalRead(ECENTERLOCK_SWITCH_ENGAGE), digitalRead(ECENTERLOCK_SWITCH_DISENGAGE)); 
+  //if (control_cycle_count % 10 == 0)
+  //  Serial.printf("Engage: %d, Disengage: %d\n", digitalRead(ECENTERLOCK_SWITCH_ENGAGE), digitalRead(ECENTERLOCK_SWITCH_DISENGAGE)); 
 
   // if(digitalRead(LIMIT_SWITCH_OUT_PIN) == LOW) {
   //   digitalWrite(LED_5_PIN, HIGH); 
@@ -868,7 +872,7 @@ void debug_mode() {
 
   if (control_cycle_count % 20 == 0) {
     Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
-   // Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
+    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
     //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   //Serial.printf("Engine Count %d\n", engine_count);
@@ -1010,9 +1014,14 @@ void setup() {
   write_all_leds(LOW);
 
   // Initialize subsystems
-  u8 odrive_status_code = odrive.init();
+  u8 odrive_status_code = odrive.init(ODRIVE_ECVT_CURRENT_SOFT_MAX);
   if (odrive_status_code != 0) {
     Serial.printf("Error: ODrive failed to initialize with error %d\n",
+                  odrive_status_code);
+  }
+  odrive_status_code = ecenterlock_odrive.init(ODRIVE_ECENT_CURRENT_SOFT_MAX);
+  if (odrive_status_code != 0) {
+    Serial.printf("Error: Ecent ODrive failed to initialize with error %d\n",
                   odrive_status_code);
   }
 
@@ -1028,6 +1037,7 @@ void setup() {
   // Run actuator homing sequence
   
   digitalWrite(LED_2_PIN, HIGH); 
+  
   u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
   if (actuator_home_status != 0) {
     Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);

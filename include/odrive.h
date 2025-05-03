@@ -81,7 +81,7 @@ public:
 
   ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus, u32 node_id);
 
-  u8 init();
+  u8 init(float current_softmax);
 
   void parse_message(const CAN_message_t &msg);
 
