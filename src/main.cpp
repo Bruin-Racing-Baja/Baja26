@@ -338,10 +338,11 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       if (gear_rpm < 50) { // TODO: what's a good threshold here 
         // Case 1: Car is Stopped
         ecenterlock.set_num_tries(3);
-      } else if (gear_rpm/GEAR_TO_WHEEL_RATIO - avg_front_rpm > ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE) {
+      } //else if (gear_rpm/GEAR_TO_WHEEL_RATIO - avg_front_rpm > ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE) {
         // Case 2: FW and BW Speed Difference 
-        ecenterlock.set_num_tries(0);  
-      } else {
+        //ecenterlock.set_num_tries(0);  
+      //} 
+      else {
         // Case 3: Car moving normally
         ecenterlock.set_num_tries(5); 
       }
