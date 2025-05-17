@@ -36,7 +36,7 @@ enum class OperatingMode {
 
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL;
-constexpr bool wait_for_serial = false;
+constexpr bool wait_for_serial = true;
 constexpr bool wait_for_can = false;
 
 
@@ -293,7 +293,7 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id,  u32 sync_val, float data
   msg.buf[0] = static_cast<u8>(func_id);
   msg.buf[1] = static_cast<u8>(sync_val);
   msg.buf[6] = 1;
-  msg.id = (node_id << 5) | 0xFF;
+  msg.id = (node_id << 5) | 0x1F;
   msg.len = 7;
   memcpy(msg.buf + 2, &data, 4);
   msg.flags.remote = false;
@@ -305,7 +305,7 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
   msg.buf[0] = static_cast<u8>(func_id);
   msg.buf[1] = static_cast<u8>(sync_val);
   msg.buf[6] = 0;
-  msg.id = (node_id << 5) | 0xFF;
+  msg.id = (node_id << 5) | 0x1F;
   msg.len = 7;
   memcpy(msg.buf + 2, &data, 4);
   msg.flags.remote = false;
@@ -315,7 +315,7 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
 void control_function() {
   control_state = ControlFunctionState_init_default;
   sync_val = (sync_val + 1) % 100;
-
+  Serial.println("In Control Function.");
   can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
   can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
 
@@ -685,6 +685,8 @@ void setup() {
     log_file = SD.open(log_name, FILE_WRITE);
     if (!log_file) {
       Serial.println("Warning: Log file was not opened! (Sarah)");
+    } else {
+      Serial.println("Log file opened!");
     }
   }
 
@@ -698,7 +700,7 @@ void setup() {
   attachInterrupt(LIMIT_SWITCH_IN_PIN, on_inbound_limit_switch, FALLING);
 
   // Initialize CAN bus
-  
+  bus.setup();
 
   // Wait for ODrive can connection if enabled
   if (wait_for_can) {
@@ -727,60 +729,62 @@ void setup() {
   digitalWrite(LED_3_PIN, HIGH);
   delay(3000);
   // Run actuator homing sequence
-  u8 actuator_home_status = actuator_ecvt.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
-  if (actuator_home_status != 0) {
-    Serial.printf("Error: Actuator failed to home with error %d\n",
-                  actuator_home_status);
-  } else {
-    digitalWrite(LED_3_PIN, LOW);
-  }
+  // u8 actuator_home_status = actuator_ecvt.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
+  // if (actuator_home_status != 0) {
+  //   Serial.printf("Error: Actuator failed to home with error %d\n",
+  //                 actuator_home_status);
+  // } else {
+  //   digitalWrite(LED_3_PIN, LOW);
+  // }
 
   // Set interrupt priorities
   // TODO: Figure out proper ISR priority levels
   NVIC_SET_PRIORITY(IRQ_GPIO6789, 16);
   timer.priority(255);
-
+  Serial.println("Before Operation Header.");
   OperationHeader operation_header;
 
-  operation_header.timestamp = now();
-  can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, 0, (u32) now())); 
+  // operation_header.timestamp = now();
+  // can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, 0, (u32) now())); 
 
-  operation_header.clock_us = micros();
-  can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, 0, (u32) micros())); 
+  // operation_header.clock_us = micros();
+  // can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, 0, (u32) micros())); 
 
-  operation_header.controller_kp = ACTUATOR_KP;
-  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, 0, (u32) ACTUATOR_KP)); 
+  // operation_header.controller_kp = ACTUATOR_KP;
+  // can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, 0, (u32) ACTUATOR_KP)); 
 
-  operation_header.controller_kd = ACTUATOR_KD;
-  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, 0, (u32) ACTUATOR_KD)); 
+  // operation_header.controller_kd = ACTUATOR_KD;
+  // can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, 0, (u32) ACTUATOR_KD)); 
 
-  operation_header.target_rpm = ENGINE_TARGET_RPM;
-  can_buffer.push(create_can_msg(CAN_TARGET_RPM, RASP_NODE_ID, 0, (u32) ENGINE_TARGET_RPM)); 
+  // operation_header.target_rpm = ENGINE_TARGET_RPM;
+  // can_buffer.push(create_can_msg(CAN_TARGET_RPM, RASP_NODE_ID, 0, (u32) ENGINE_TARGET_RPM)); 
   
-  operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
-  can_buffer.push(create_can_msg(CAN_WHEEL_REF_LOW_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_LOW_RPM)); 
+  // operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_LOW_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_LOW_RPM)); 
 
-  operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
-  can_buffer.push(create_can_msg(WHEEL_REF_HIGH_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_HIGH_RPM)); 
+  // operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
+  // can_buffer.push(create_can_msg(WHEEL_REF_HIGH_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_HIGH_RPM)); 
 
-  operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
-  can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_LOW_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_LOW_MPH)); 
+  // operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_LOW_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_LOW_MPH)); 
 
-  operation_header.wheel_ref_breakpoint_high_mph =
-      WHEEL_REF_BREAKPOINT_HIGH_MPH;
+  // operation_header.wheel_ref_breakpoint_high_mph =
+  //     WHEEL_REF_BREAKPOINT_HIGH_MPH;
   
-  can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_HIGH_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_HIGH_MPH)); 
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_HIGH_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_HIGH_MPH)); 
 
   size_t message_length = encode_pb_message(
       message_buffer, MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
       &OperationHeader_msg, &operation_header);
   size_t num_bytes_written = log_file.write(message_buffer, message_length);
   log_file.flush();
+  Serial.println("After Operation Header.");
 
   // Attach timer interrupt
   switch (operating_mode) {
   case OperatingMode::NORMAL:
-    timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
+    Serial.println("Started timer interrupt");
+    timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS *5* 1e3);
     break;
   case OperatingMode::BUTTON_SHIFT:
     timer.begin(button_shift_mode, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
