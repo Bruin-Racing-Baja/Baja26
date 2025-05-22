@@ -38,7 +38,7 @@ enum class OperatingMode {
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL;
 constexpr bool wait_for_serial = true;
 constexpr bool wait_for_can = false;
-
+constexpr bool serial_logging = true; 
 
 /**** Global Objects ****/
  IntervalTimer timer;
@@ -269,6 +269,7 @@ void on_rw_geartooth_sensor() {
 void on_outbound_limit_switch() {
   odrive_ecvt.set_absolute_position(0.0);
   odrive_ecvt.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  digitalWrite(LED_1_PIN, HIGH); 
 }
 
 void on_engage_limit_switch() {
@@ -277,11 +278,13 @@ void on_engage_limit_switch() {
   if (vel_estimate < -10) {
     odrive_ecvt.set_axis_state(ODrive::AXIS_STATE_IDLE);
   }
+  digitalWrite(LED_2_PIN, HIGH);
 }
 
 void on_inbound_limit_switch() {
   odrive_ecvt.set_absolute_position(15.0);
   odrive_ecvt.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  digitalWrite(LED_3_PIN, HIGH);
 }
 
 // ඞ
@@ -315,7 +318,6 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
 void control_function() {
   control_state = ControlFunctionState_init_default;
   sync_val = (sync_val + 1) % 100;
-  Serial.println("In Control Function.");
   can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
   can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
 
@@ -484,7 +486,7 @@ void control_function() {
   can_buffer.push(create_can_msg(CAN_ECVT_VELOCITY_COMMAND, RASP_NODE_ID, sync_val, ecvt_velocity_command)); 
 
 
-  actuator_ecvt.set_velocity(control_state.velocity_command);
+  // actuator_ecvt.set_velocity(control_state.velocity_command);
 
   // TODO: Fix velocity for wacky rpm values
   /*
@@ -560,6 +562,14 @@ void control_function() {
                     write_status);
     }
   }
+
+  if (serial_logging) {
+    Serial.printf("Throt Pot: %f, Secondary: %f\n", control_state.throttle, control_state.gear_count); 
+    if (control_state.outbound_limit_switch == LOW) digitalWrite(LED_1_PIN, LOW); 
+    if (control_state.inbound_limit_switch == LOW) digitalWrite(LED_3_PIN, LOW); 
+    if (control_state.engage_limit_switch == LOW) digitalWrite(LED_2_PIN, LOW); 
+  }
+
   control_state.cycle_count++;
 }
 
@@ -741,7 +751,6 @@ void setup() {
   // TODO: Figure out proper ISR priority levels
   NVIC_SET_PRIORITY(IRQ_GPIO6789, 16);
   timer.priority(255);
-  Serial.println("Before Operation Header.");
   OperationHeader operation_header;
 
   // operation_header.timestamp = now();
