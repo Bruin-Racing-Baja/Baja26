@@ -13,7 +13,7 @@ Can_Bus::Can_Bus()
 void Can_Bus::setup()
 {
   flexcan_bus.begin();
-  flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);
+  flexcan_bus.setBaudRate(1000000);
   flexcan_bus.setMaxMB(FLEXCAN_MAX_MAILBOX);
   flexcan_bus.enableFIFO();
   flexcan_bus.enableFIFOInterrupt();
@@ -59,7 +59,6 @@ u8 Can_Bus::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   return write_code;
 }
 u8 Can_Bus::send_command(CAN_message_t msg) {
-  Serial.print("Sending");
   return flexcan_bus.write(msg);
 }
 

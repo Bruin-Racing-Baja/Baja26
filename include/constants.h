@@ -244,7 +244,7 @@ constexpr u8 BRAKE_SENSOR_PIN = 39;
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;  
-constexpr u32 FLEXCAN_MAX_MAILBOX = 16;     
+constexpr u32 FLEXCAN_MAX_MAILBOX = 63;     
 // Logging
 // bytes_per_cycle * cycle_freq * time_to_flush_sd * safety_factor
 // 100 * 100 * 0.4 * 2 = 8000

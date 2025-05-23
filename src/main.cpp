@@ -83,6 +83,8 @@ volatile float filt_engine_time_diff_us = 0;
 u32 last_engine_time_us = 0;
 u32 last_sample_engine_time_us = 0;
 
+u32 worked = 0;
+u32 nowork = 0;
 volatile u32 gear_count = 0;
 volatile u32 gear_time_diff_us = 0;
 volatile float last_gear_time_diff_us = 0;
@@ -315,7 +317,6 @@ CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t da
 void control_function() {
   control_state = ControlFunctionState_init_default;
   sync_val = (sync_val + 1) % 100;
-  Serial.println("In Control Function.");
   can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
   can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
 
@@ -784,7 +785,7 @@ void setup() {
   switch (operating_mode) {
   case OperatingMode::NORMAL:
     Serial.println("Started timer interrupt");
-    timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS *5* 1e3);
+    timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
     break;
   case OperatingMode::BUTTON_SHIFT:
     timer.begin(button_shift_mode, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
@@ -800,11 +801,17 @@ void setup() {
 void loop() {
   digitalWrite(LED_4_PIN, actuator_ecvt.get_outbound_limit());
   digitalWrite(LED_5_PIN, actuator_ecvt.get_inbound_limit());
+  worked = 0;
+  nowork = 0;
   while(!can_buffer.empty())
   {
-    bus.send_command(can_buffer.front());
+
+    int return_val = bus.send_command(can_buffer.front());
+    
+    //Serial.printf("in loop");
     can_buffer.pop();
   }
+  
     
     // char* message = "Hello from Dash!";
     // u8 buf [64];
