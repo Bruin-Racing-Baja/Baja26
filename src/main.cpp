@@ -36,8 +36,9 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can_ecvt = true;
-constexpr bool using_ecenterlock = true; 
+constexpr bool wait_for_can_ecvt = false;
+constexpr bool using_ecenterlock = false; 
+constexpr bool serial_logging = true; 
 int cycles_to_wait_for_vel = 20; 
 
 /**** Global Objects ****/
@@ -686,6 +687,14 @@ void control_function() {
                     write_status);
     }
   }
+
+    if (serial_logging) {
+    Serial.printf("Throt Pot: %f, Secondary: %d\n", control_state.throttle, control_state.gear_count); 
+    if (control_state.outbound_limit_switch == LOW) digitalWrite(LED_1_PIN, LOW); 
+    if (control_state.inbound_limit_switch == LOW) digitalWrite(LED_3_PIN, LOW); 
+    if (control_state.engage_limit_switch == LOW) digitalWrite(LED_2_PIN, LOW); 
+  }
+
   control_state.cycle_count++;
 }
 
@@ -873,7 +882,6 @@ void debug_mode() {
 
   if (control_cycle_count % 20 == 0) {
     Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
-    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
     //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   //Serial.printf("Engine Count %d\n", engine_count);

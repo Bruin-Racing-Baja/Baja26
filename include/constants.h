@@ -280,10 +280,10 @@ constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
 constexpr u8 ENGINE_SENSOR_PIN = 16; 
-constexpr u8 GEARTOOTH_SENSOR_PIN = 27; 
+constexpr u8 GEARTOOTH_SENSOR_PIN = 15; 
 constexpr u8 LEFT_WHEEL_SENSOR_PIN = 13;
 constexpr u8 RIGHT_WHEEL_SENSOR_PIN = 14; 
-constexpr u8 ECENTERLOCK_SENSOR_PIN = 15; 
+constexpr u8 ECENTERLOCK_SENSOR_PIN = 27; 
 
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
