@@ -490,7 +490,7 @@ void control_function() {
   control_state = ControlFunctionState_init_default;
   sync_val = (sync_val + 1) % 100;
   can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
-  can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
+  //can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
 
   can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, sync_val, micros()));
   control_state.cycle_start_us = micros();
@@ -746,13 +746,13 @@ void control_function() {
   can_buffer.push(create_can_msg(CAN_ECVT_LAST_HEARTBEAT_MS, RASP_NODE_ID, sync_val, odrive.get_time_since_heartbeat_ms())); 
 
   control_state.disarm_reason = odrive.get_disarm_reason();
-  can_buffer.push(create_can_msg(CAN_ECVT_DISARM_REASON, RASP_NODE_ID, sync_val, odrive.get_disarm_reason())); 
+  //can_buffer.push(create_can_msg(CAN_ECVT_DISARM_REASON, RASP_NODE_ID, sync_val, odrive.get_disarm_reason())); 
 
   control_state.active_errors = odrive.get_active_errors();
-  can_buffer.push(create_can_msg(CAN_ECVT_ACTIVE_ERRORS, RASP_NODE_ID, sync_val, odrive.get_active_errors())); 
+  //can_buffer.push(create_can_msg(CAN_ECVT_ACTIVE_ERRORS, RASP_NODE_ID, sync_val, odrive.get_active_errors())); 
 
   control_state.procedure_result = odrive.get_procedure_result();
-  can_buffer.push(create_can_msg(CAN_ECVT_PROCEDURE_RESULT, RASP_NODE_ID, sync_val, (u32) odrive.get_procedure_result())); 
+  //can_buffer.push(create_can_msg(CAN_ECVT_PROCEDURE_RESULT, RASP_NODE_ID, sync_val, (u32) odrive.get_procedure_result())); 
 
   control_state.bus_current = odrive.get_bus_current();
   can_buffer.push(create_can_msg(CAN_ECVT_BUS_CURRENT, RASP_NODE_ID, sync_val, odrive.get_bus_current())); 

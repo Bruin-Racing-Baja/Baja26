@@ -19,10 +19,10 @@ class Can_Bus
         static FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
         static ODrive* odrive_ecvt;
         static ODrive* odrive_ecent;
-        static const u8 ODRIVE_ECVT_NODE_ID = 1;
-        static const u8 ODRIVE_ECENT_NODE_ID = 2;
-        static const u8 CONTROLS_PCB_NODE_ID = 3;
+        
 };
-  
+constexpr u8 ODRIVE_NODE_ID = 0x3;   
+constexpr u8 RASP_NODE_ID = 0x4;  
+constexpr u8 ECENTERLOCK_ODRIVE_NODE_ID = 0x7;    
     
 #endif
