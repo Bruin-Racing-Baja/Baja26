@@ -23,8 +23,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <types.h>
-
-// Acknowledgements to Tyler, Drew, Getty, et al. :)
+#include <can_bus.h>
+#include <queue>
+#include <can_ids.h>
+//Acknowledgements to Tyler, Drew, Getty, et al. :)
 
 enum class OperatingMode {
   NORMAL,
@@ -42,10 +44,11 @@ int cycles_to_wait_for_vel = 20;
 
 /**** Global Objects ****/
 IntervalTimer timer;
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
+Can_Bus bus;
+std::queue<CAN_message_t> can_buffer;
 
-ODrive odrive(&flexcan_bus, ODRIVE_NODE_ID);
-ODrive ecenterlock_odrive(&flexcan_bus, ECENTERLOCK_ODRIVE_NODE_ID);
+ODrive odrive(&bus, ODRIVE_NODE_ID);
+ODrive ecenterlock_odrive(&bus, ECENTERLOCK_ODRIVE_NODE_ID);
 
 Actuator actuator(&odrive);
 Ecenterlock ecenterlock(&ecenterlock_odrive);
@@ -78,13 +81,15 @@ bool sd_initialized = false;
 /**** ECVT State Variables ****/
 // TODO: Confirm variables only accessed in timer ISR dont need to be volatile
 u32 control_cycle_count = 0;
-
+u32 sync_val = 0;
 volatile u32 engine_count = 0;
 volatile u32 engine_time_diff_us = 0;
 volatile float filt_engine_time_diff_us = 0;
 u32 last_engine_time_us = 0;
 u32 last_sample_engine_time_us = 0;
 
+u32 worked = 0;
+u32 nowork = 0;
 volatile u32 gear_count = 0;
 volatile u32 gear_time_diff_us = 0;
 volatile float last_gear_time_diff_us = 0;
@@ -131,14 +136,6 @@ u8 message_buffer[MESSAGE_BUFFER_SIZE];
 /**** Global Functions ****/
 time_t get_teensy3_time() { return Teensy3Clock.get(); }
 
-void can_parse(const CAN_message_t &msg) { 
-  u32 parsed_node_id = (msg.id >> 5) & 0x3F;
-  if (parsed_node_id == ODRIVE_NODE_ID) {
-    odrive.parse_message(msg);
-  } else if (parsed_node_id == ECENTERLOCK_ODRIVE_NODE_ID) {
-    ecenterlock_odrive.parse_message(msg);
-  }
-}
 
 inline void write_all_leds(u8 state) {
   digitalWrite(LED_1_PIN, state);
@@ -460,37 +457,77 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
   control_cycle_count++;
 }
 
+
 // ඞ
+
+
+CAN_message_t create_can_msg(u32 func_id, u32 node_id,  u32 sync_val, float data){
+  CAN_message_t msg;
+  u8 buf[8];
+  msg.buf[0] = static_cast<u8>(func_id);
+  msg.buf[1] = static_cast<u8>(sync_val);
+  msg.buf[6] = 1;
+  msg.id = (node_id << 5) | 0x1F;
+  msg.len = 7;
+  memcpy(msg.buf + 2, &data, 4);
+  msg.flags.remote = false;
+  return msg;
+}
+CAN_message_t create_can_msg(u32 func_id, u32 node_id, u32 sync_val, uint32_t data){
+  CAN_message_t msg;
+  u8 buf[8];
+  msg.buf[0] = static_cast<u8>(func_id);
+  msg.buf[1] = static_cast<u8>(sync_val);
+  msg.buf[6] = 0;
+  msg.id = (node_id << 5) | 0x1F;
+  msg.len = 7;
+  memcpy(msg.buf + 2, &data, 4);
+  msg.flags.remote = false;
+  return msg;
+}
+
 void control_function() {
   control_state = ControlFunctionState_init_default;
+  sync_val = (sync_val + 1) % 100;
+  can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, sync_val, (u32) now()));
+  can_buffer.push(create_can_msg(CAN_CYCLE_COUNT, RASP_NODE_ID, sync_val, sync_val));
+
+  can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, sync_val, micros()));
   control_state.cycle_start_us = micros();
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
 
-  control_state.raw_throttle = analogRead(THROTTLE_SENSOR_PIN);
-  control_state.raw_brake = analogRead(BRAKE_SENSOR_PIN);
+  uint32_t raw_throttle = analogRead(THROTTLE_SENSOR_PIN);
+  control_state.raw_throttle = raw_throttle;
+  can_buffer.push(create_can_msg(CAN_RAW_THROTTLE, RASP_NODE_ID, sync_val, raw_throttle));
+  uint32_t raw_brake = analogRead(BRAKE_SENSOR_PIN);
+  control_state.raw_brake = raw_brake;
+  can_buffer.push(create_can_msg(CAN_RAW_BRAKE, RASP_NODE_ID, sync_val, raw_brake));
 
-  control_state.throttle =
-      map_int_to_float(control_state.raw_throttle, THROTTLE_MIN_VALUE,
-                       THROTTLE_MAX_VALUE, 0.0, 1.0);
-  control_state.throttle = CLAMP(control_state.throttle, 0.0, 1.0);
+  float throttle = CLAMP(map_int_to_float(raw_throttle, THROTTLE_MIN_VALUE,
+    THROTTLE_MAX_VALUE, 0.0, 1.0), 0.0, 1.0);
+  control_state.throttle = throttle;
+  can_buffer.push(create_can_msg(CAN_THROTTLE, RASP_NODE_ID, sync_val, throttle));
+  
+  float brake = CLAMP(map_int_to_float(
+    raw_brake, BRAKE_MIN_VALUE, BRAKE_MAX_VALUE, 0.0, 1.0), 0.0, 1.0);
+  control_state.brake = brake;
+  can_buffer.push(create_can_msg(CAN_BRAKE, RASP_NODE_ID, sync_val, brake));
 
-  control_state.brake = map_int_to_float(
-      control_state.raw_brake, BRAKE_MIN_VALUE, BRAKE_MAX_VALUE, 0.0, 1.0);
-  control_state.brake = CLAMP(control_state.brake, 0.0, 1.0);
+  float throttle_filtered = throttle_fitler.update(control_state.throttle);
+  control_state.throttle_filtered = throttle_filtered;
+  can_buffer.push(create_can_msg(CAN_THROTTLE_FILTERED, RASP_NODE_ID, sync_val, throttle_filtered)); 
 
-  control_state.throttle_filtered =
-      throttle_fitler.update(control_state.throttle);
-
-  control_state.d_throttle =
-      (control_state.throttle_filtered - last_throttle) / dt_s;
+  float d_throttle = (throttle_filtered - last_throttle) / dt_s;
+  control_state.d_throttle = d_throttle;
+  can_buffer.push(create_can_msg(CAN_D_THROTTLE, RASP_NODE_ID, sync_val, d_throttle)); 
   last_throttle = control_state.throttle_filtered;
 
   // Grab sensor data
   noInterrupts();
-  control_state.engine_count = engine_count;
-  control_state.gear_count = gear_count;
-  control_state.lw_gear_count = lw_gear_count;
-  control_state.rw_gear_count = rw_gear_count;
+  float engine_count_curr = engine_count;
+  float gear_count_curr = gear_count;
+  float lw_gear_count_curr = lw_gear_count;
+  float rw_gear_count_curr = rw_gear_count;
 
   float cur_engine_time_diff_us = engine_time_diff_us;
   float cur_filt_engine_time_diff_us = filt_engine_time_diff_us;
@@ -498,37 +535,55 @@ void control_function() {
   float lw_cur_gear_time_diff_us = lw_gear_time_diff_us; 
   float rw_cur_gear_time_diff_us = rw_gear_time_diff_us; 
   interrupts();
-
+  can_buffer.push(create_can_msg(CAN_ENGINE_COUNT, RASP_NODE_ID, sync_val, engine_count_curr)); 
+  can_buffer.push(create_can_msg(CAN_GEAR_COUNT, RASP_NODE_ID, sync_val, gear_count_curr)); 
+  can_buffer.push(create_can_msg(CAN_LW_GEAR_COUNT, RASP_NODE_ID, sync_val, lw_gear_count_curr)); 
+  can_buffer.push(create_can_msg(CAN_RW_GEAR_COUNT, RASP_NODE_ID, sync_val, rw_gear_count_curr)); 
+  control_state.engine_count = engine_count_curr;
+  control_state.gear_count = gear_count_curr;
+  control_state.lw_gear_count = lw_gear_count_curr;
+  control_state.rw_gear_count = rw_gear_count_curr;
   // Calculate instantaneous RPMs
   // TODO: Fix edge case of no movement
+  float engine_rpm = 0;
+  float filtered_engine_rpm = 0;
   control_state.engine_rpm = 0;
   if (engine_time_diff_us != 0) {
-    control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
-                               cur_engine_time_diff_us * US_PER_SECOND *
-                               SECONDS_PER_MINUTE;
-    control_state.filtered_engine_rpm =
-        ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
-        cur_filt_engine_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
-
-    // TODO: Confirm we need median filter
-    control_state.filtered_engine_rpm =
-        engine_rpm_median_filter.update(control_state.filtered_engine_rpm);
-    control_state.filtered_engine_rpm =
-        engine_rpm_time_filter.update(control_state.filtered_engine_rpm);
+    engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+    cur_engine_time_diff_us * US_PER_SECOND *
+    SECONDS_PER_MINUTE;
+    control_state.engine_rpm = engine_rpm;
+    filtered_engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
+    cur_filt_engine_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+    
+    filtered_engine_rpm = engine_rpm_median_filter.update(filtered_engine_rpm);
+    filtered_engine_rpm = engine_rpm_time_filter.update(filtered_engine_rpm);
+    control_state.filtered_engine_rpm = filtered_engine_rpm;
   }
+  can_buffer.push(create_can_msg(CAN_ENGINE_RPM, RASP_NODE_ID, sync_val, engine_rpm)); 
+  can_buffer.push(create_can_msg(CAN_FILTERED_ENGINE_RPM, RASP_NODE_ID, sync_val, filtered_engine_rpm)); 
+    // TODO: Confirm we need median filter
+    //control_state.filtered_engine_rpm =
+    //    engine_rpm_median_filter.update(control_state.filtered_engine_rpm);
+    //control_state.filtered_engine_rpm =
+    //    engine_rpm_time_filter.update(control_state.filtered_engine_rpm);
+  //}
 
   float gear_rpm = 0.0;
   float filt_gear_rpm = 0.0;
-  if (gear_time_diff_us != 0) {
+  if(gear_time_diff_us != 0) {
     gear_rpm = GEAR_SAMPLE_WINDOW / GEAR_COUNTS_PER_ROT /
                cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
     filt_gear_rpm = gear_rpm_time_filter.update(gear_rpm);
   }
 
   float wheel_rpm = gear_rpm * GEAR_TO_WHEEL_RATIO;
-  control_state.secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
-  control_state.filtered_secondary_rpm =
-      filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
+  float secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
+  control_state.secondary_rpm = secondary_rpm;
+  can_buffer.push(create_can_msg(CAN_SECONDARY_RPM, RASP_NODE_ID, sync_val, secondary_rpm)); 
+  float filtered_secondary_rpm = filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
+  control_state.filtered_secondary_rpm = filtered_secondary_rpm;
+  can_buffer.push(create_can_msg(CAN_FILTERED_SECONDARY_RPM, RASP_NODE_ID, sync_val, filtered_secondary_rpm)); 
 
   float wheel_mph = control_state.filtered_secondary_rpm *
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
@@ -542,7 +597,7 @@ void control_function() {
                           lw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
   }
   control_state.left_front_wheel_rpm = left_front_wheel_rpm;
-
+  can_buffer.push(create_can_msg(CAN_LEFT_FRONT_WHEEL_RPM, RASP_NODE_ID, sync_val, left_front_wheel_rpm)); 
   float right_front_wheel_rpm = 0.0; 
   float filt_rfw_rpm = 0.0; 
   if (rw_gear_time_diff_us != 0) {
@@ -550,8 +605,8 @@ void control_function() {
                           rw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
   }
   control_state.right_front_wheel_rpm = right_front_wheel_rpm;
-
-  
+  can_buffer.push(create_can_msg(CAN_RIGHT_FRONT_WHEEL_RPM, RASP_NODE_ID, sync_val, right_front_wheel_rpm)); 
+  float target_rpm = 0;
   // Controller (Position)
   // control_state.target_rpm =
   //     (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
@@ -598,36 +653,63 @@ void control_function() {
   // actuator.set_position(control_state.position_command);
 
   // Controller (Velocity)
+
   if (WHEEL_REF_ENABLED) {
-    control_state.target_rpm =
+    target_rpm =
         (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
         WHEEL_REF_LOW_RPM;
-    control_state.target_rpm =
-        CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
+    target_rpm =
+        CLAMP(target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
+      
   } else {
-    control_state.target_rpm = ENGINE_TARGET_RPM;
+    target_rpm = ENGINE_TARGET_RPM;
   }
-  //control_state.target_rpm = ENGINE_TARGET_RPM;
-  
-  control_state.engine_rpm_error =
-      control_state.filtered_engine_rpm - control_state.target_rpm;
+  control_state.target_rpm = target_rpm;
+  can_buffer.push(create_can_msg(CAN_TARGET_RPM, RASP_NODE_ID, sync_val, target_rpm)); 
+
+
+  float engine_rpm_error =
+      filtered_engine_rpm - target_rpm;
+  control_state.engine_rpm_error = engine_rpm_error;
+  can_buffer.push(create_can_msg(CAN_ENGINE_RPM_ERROR, RASP_NODE_ID, sync_val, engine_rpm_error)); 
+
 
   float filtered_engine_rpm_error =
       engine_rpm_derror_filter.update(control_state.engine_rpm_error);
 
-  control_state.engine_rpm_derror =
+  float engine_rpm_derror =
       (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
+  control_state.engine_rpm_derror = engine_rpm_derror;
+  can_buffer.push(create_can_msg(CAN_ENGINE_RPM_DERROR, RASP_NODE_ID, sync_val, engine_rpm_derror)); 
+
   last_engine_rpm_error = filtered_engine_rpm_error;
 
+  
   control_state.velocity_mode = true;
+  can_buffer.push(create_can_msg(CAN_VELOCITY_MODE, RASP_NODE_ID, sync_val, (u32) 1)); 
 
   control_state.velocity_command =
-       (control_state.engine_rpm_error * ACTUATOR_KP +
-      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD));
+      control_state.engine_rpm_error * ACTUATOR_KP +
+      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD);
+  
+      
+  float ecvt_velocity_command = engine_rpm_error * ACTUATOR_KP +
+      engine_rpm_derror * ACTUATOR_KD +
+      MAX(0, control_state.d_throttle * THROTTLE_KD);
 
-  // TODO: Move this logic to actuator ?
+      ecvt_velocity_command = CLAMP(ecvt_velocity_command,
+      -ODRIVE_VEL_LIMIT, ODRIVE_VEL_LIMIT);
+
+  control_state.velocity_command = ecvt_velocity_command;
+  can_buffer.push(create_can_msg(CAN_ECVT_VELOCITY_COMMAND, RASP_NODE_ID, sync_val, ecvt_velocity_command)); 
+
+
+  actuator.set_velocity(control_state.velocity_command);
+
+  // TODO: Fix velocity for wacky rpm values
   /*
-  if (odrive.get_pos_estimate() < ACTUATOR_SLOW_INBOUND_REGION_ROT) {
+  control_state.velocity_mode = control_state.filtered_engine_rpm > 2300;
+  if (control_state.velocity_mode) {
     control_state.velocity_command =
         CLAMP(control_state.velocity_command, -ODRIVE_VEL_LIMIT,
               ACTUATOR_SLOW_INBOUND_VEL);
@@ -652,24 +734,49 @@ void control_function() {
 
   // Populate control state
   control_state.inbound_limit_switch = actuator.get_inbound_limit();
+  can_buffer.push(create_can_msg(CAN_ECVT_INBOUND_LIMIT_SWITCH, RASP_NODE_ID, sync_val, (u32) actuator.get_inbound_limit())); 
+
   control_state.outbound_limit_switch = actuator.get_outbound_limit();
+  can_buffer.push(create_can_msg(CAN_ECVT_OUTBOUND_LIMIT_SWITCH, RASP_NODE_ID, sync_val, (u32) actuator.get_outbound_limit())); 
+
   control_state.engage_limit_switch = actuator.get_engage_limit();
+  can_buffer.push(create_can_msg(CAN_ECVT_ENGAGE_LIMIT_SWITCH, RASP_NODE_ID, sync_val, (u32) actuator.get_engage_limit())); 
 
   control_state.last_heartbeat_ms = odrive.get_time_since_heartbeat_ms();
+  can_buffer.push(create_can_msg(CAN_ECVT_LAST_HEARTBEAT_MS, RASP_NODE_ID, sync_val, odrive.get_time_since_heartbeat_ms())); 
+
   control_state.disarm_reason = odrive.get_disarm_reason();
+  can_buffer.push(create_can_msg(CAN_ECVT_DISARM_REASON, RASP_NODE_ID, sync_val, odrive.get_disarm_reason())); 
+
   control_state.active_errors = odrive.get_active_errors();
+  can_buffer.push(create_can_msg(CAN_ECVT_ACTIVE_ERRORS, RASP_NODE_ID, sync_val, odrive.get_active_errors())); 
+
   control_state.procedure_result = odrive.get_procedure_result();
+  can_buffer.push(create_can_msg(CAN_ECVT_PROCEDURE_RESULT, RASP_NODE_ID, sync_val, (u32) odrive.get_procedure_result())); 
 
   control_state.bus_current = odrive.get_bus_current();
+  can_buffer.push(create_can_msg(CAN_ECVT_BUS_CURRENT, RASP_NODE_ID, sync_val, odrive.get_bus_current())); 
+
   control_state.bus_voltage = odrive.get_bus_voltage();
+  can_buffer.push(create_can_msg(CAN_ECVT_BUS_VOLTAGE, RASP_NODE_ID, sync_val, odrive.get_bus_voltage())); 
+
   control_state.iq_measured = odrive.get_iq_measured();
+  can_buffer.push(create_can_msg(CAN_ECVT_IQ_MEASURED, RASP_NODE_ID, sync_val, odrive.get_iq_measured())); 
+
   control_state.iq_setpoint = odrive.get_iq_setpoint();
+  can_buffer.push(create_can_msg(CAN_ECVT_IQ_SETPOINT, RASP_NODE_ID, sync_val, odrive.get_iq_setpoint())); 
 
   control_state.velocity_estimate = odrive.get_vel_estimate();
+  can_buffer.push(create_can_msg(CAN_ECVT_VELOCITY_ESTIMATE, RASP_NODE_ID, sync_val, odrive.get_vel_estimate())); 
+
   control_state.position_estimate = odrive.get_pos_estimate();
+  can_buffer.push(create_can_msg(CAN_ECVT_POSITION_ESTIMATE, RASP_NODE_ID, sync_val, odrive.get_pos_estimate())); 
 
   control_state.p_term = ACTUATOR_KP;
-  //control_state.d_term = ACTUATOR_KD;
+  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, sync_val, ACTUATOR_KP)); 
+
+  control_state.d_term = ACTUATOR_KD;
+  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, sync_val, ACTUATOR_KD)); 
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
@@ -886,7 +993,8 @@ void setup() {
   for (u8 pin = 0; pin < NUM_DIGITAL_PINS; pin++) {
     pinMode(pin, OUTPUT);
   }
-
+  bus.set_odrive_ecent(&odrive);
+  bus.set_odrive_ecvt(&ecenterlock_odrive);
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(LED_1_PIN, OUTPUT);
@@ -967,6 +1075,8 @@ void setup() {
     log_file = SD.open(log_name, FILE_WRITE);
     if (!log_file) {
       Serial.println("Warning: Log file was not opened! (Sarah)");
+    } else {
+      Serial.println("Log file opened!");
     }
   }
 
@@ -985,12 +1095,7 @@ void setup() {
   attachInterrupt(LIMIT_SWITCH_IN_PIN, on_inbound_limit_switch, FALLING);
 
   // Initialize CAN bus
-  flexcan_bus.begin();
-  flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);
-  flexcan_bus.setMaxMB(FLEXCAN_MAX_MAILBOX);
-  flexcan_bus.enableFIFO();
-  flexcan_bus.enableFIFOInterrupt();
-  flexcan_bus.onReceive(can_parse);
+  bus.setup();
 
   // Wait for ODrive can connection if enabled
   
@@ -1062,27 +1167,49 @@ void setup() {
   // TODO: Figure out proper ISR priority levels
   NVIC_SET_PRIORITY(IRQ_GPIO6789, 16);
   timer.priority(255);
-
+  Serial.println("Before Operation Header.");
   OperationHeader operation_header;
 
-  operation_header.timestamp = now();
-  operation_header.clock_us = micros();
-  operation_header.controller_kp = ACTUATOR_KP;
-  operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
-  operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
-  operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
-  operation_header.wheel_ref_breakpoint_high_mph =
-      WHEEL_REF_BREAKPOINT_HIGH_MPH;
+  // operation_header.timestamp = now();
+  // can_buffer.push(create_can_msg(CAN_REAL_TIME, RASP_NODE_ID, 0, (u32) now())); 
+
+  // operation_header.clock_us = micros();
+  // can_buffer.push(create_can_msg(CAN_TIMESTAMP, RASP_NODE_ID, 0, (u32) micros())); 
+
+  // operation_header.controller_kp = ACTUATOR_KP;
+  // can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, 0, (u32) ACTUATOR_KP)); 
+
+  // operation_header.controller_kd = ACTUATOR_KD;
+  // can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, 0, (u32) ACTUATOR_KD)); 
+
+  // operation_header.target_rpm = ENGINE_TARGET_RPM;
+  // can_buffer.push(create_can_msg(CAN_TARGET_RPM, RASP_NODE_ID, 0, (u32) ENGINE_TARGET_RPM)); 
+  
+  // operation_header.wheel_ref_low_rpm = WHEEL_REF_LOW_RPM;
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_LOW_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_LOW_RPM)); 
+
+  // operation_header.wheel_ref_high_rpm = WHEEL_REF_HIGH_RPM;
+  // can_buffer.push(create_can_msg(WHEEL_REF_HIGH_RPM, RASP_NODE_ID, 0, (u32) WHEEL_REF_HIGH_RPM)); 
+
+  // operation_header.wheel_ref_breakpoint_low_mph = WHEEL_REF_BREAKPOINT_LOW_MPH;
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_LOW_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_LOW_MPH)); 
+
+  // operation_header.wheel_ref_breakpoint_high_mph =
+  //     WHEEL_REF_BREAKPOINT_HIGH_MPH;
+  
+  // can_buffer.push(create_can_msg(CAN_WHEEL_REF_BREAKPOINT_HIGH_MPH, RASP_NODE_ID, 0, (u32) WHEEL_REF_BREAKPOINT_HIGH_MPH)); 
 
   size_t message_length = encode_pb_message(
       message_buffer, MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
       &OperationHeader_msg, &operation_header);
   size_t num_bytes_written = log_file.write(message_buffer, message_length);
   log_file.flush();
+  Serial.println("After Operation Header.");
 
   // Attach timer interrupt
   switch (operating_mode) {
   case OperatingMode::NORMAL:
+    Serial.println("Started timer interrupt");
     timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
     break;
   case OperatingMode::BUTTON_SHIFT:
@@ -1097,28 +1224,49 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(LED_4_PIN, actuator.get_outbound_limit());
+  digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
+  worked = 0;
+  nowork = 0;
+  while(!can_buffer.empty())
+  {
+
+    int return_val = bus.send_command(can_buffer.front());
+    
+    //Serial.printf("in loop");
+    can_buffer.pop();
+  }
+  
+    
+    // char* message = "Hello from Dash!";
+    // u8 buf [64];
+    // memcpy(buf, message, strlen(message) + 1); 
+    // bus.send_command(1, 2, 0, buf);
+    // delay(100);
+
+
   // LED indicators
   // digitalWrite(LED_4_PIN, actuator.get_outbound_limit());
   // digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
 
   // Flush SD card if buffer full
-  if (sd_initialized && !logging_disconnected) {
-    for (size_t buffer_num = 0; buffer_num < 2; buffer_num++) {
-      if (double_buffer[buffer_num].full) {
-        // Serial.printf("Info: Writing buffer %d to SD\n", buffer_num);
-        size_t num_bytes_written = log_file.write(
-            double_buffer[buffer_num].buffer, double_buffer[buffer_num].idx);
-        if (num_bytes_written == 0) {
-          logging_disconnected = true;
-          digitalWrite(LED_1_PIN, HIGH);
-        } else {
-          log_file.flush();
-          double_buffer[buffer_num].full = false;
-          double_buffer[buffer_num].idx = 0;
-        }
-      }
-    }
-  } else {
-    digitalWrite(LED_1_PIN, HIGH);
-  }
+  // if (sd_initialized && !logging_disconnected) {
+  //   for (size_t buffer_num = 0; buffer_num < 2; buffer_num++) {
+  //     if (double_buffer[buffer_num].full) {
+  //       Serial.printf("Info: Writing buffer %d to SD\n", buffer_num);
+  //       size_t num_bytes_written = log_file.write(
+  //           double_buffer[buffer_num].buffer, double_buffer[buffer_num].idx);
+  //       if (num_bytes_written == 0) {
+  //         logging_disconnected = true;
+  //         digitalWrite(LED_1_PIN, HIGH);
+  //       } else {
+  //         log_file.flush();
+  //         double_buffer[buffer_num].full = false;
+  //         double_buffer[buffer_num].idx = 0;
+  //       }
+  //     }
+  //   }
+  // } else {
+  //   digitalWrite(LED_1_PIN, HIGH);
+  // }
 }

@@ -48,7 +48,8 @@ constexpr u32 L_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
-constexpr u8 ODRIVE_NODE_ID = 0x3;                         
+constexpr u8 ODRIVE_NODE_ID = 0x3;   
+constexpr u8 RASP_NODE_ID = 0x4;                       
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
 constexpr float ODRIVE_ECVT_CURRENT_SOFT_MAX = 30.0;
 constexpr float ODRIVE_ECENT_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
@@ -81,6 +82,7 @@ constexpr u32 BRAKE_MIN_VALUE = 405;                // TODO: UPDATE THIS
 constexpr u32 BRAKE_MAX_VALUE = 290;                // TODO: UPDATE THIS
 constexpr u32 THROTTLE_MIN_VALUE = 1000;            // TODO: UPDATE THIS
 constexpr u32 THROTTLE_MAX_VALUE = 80;            // TODO: UPDATE THIS
+
 
 // Actuator
 // NOTE: Pitch is distance / rotation
@@ -280,10 +282,10 @@ constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 
 constexpr u8 ENGINE_SENSOR_PIN = 16; 
-constexpr u8 GEARTOOTH_SENSOR_PIN = 27; 
+constexpr u8 GEARTOOTH_SENSOR_PIN = 15; 
 constexpr u8 LEFT_WHEEL_SENSOR_PIN = 13;
 constexpr u8 RIGHT_WHEEL_SENSOR_PIN = 14; 
-constexpr u8 ECENTERLOCK_SENSOR_PIN = 15; 
+constexpr u8 ECENTERLOCK_SENSOR_PIN = 27; 
 
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
@@ -295,8 +297,8 @@ constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
 constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 5000; 
 
 // Flexcan
-constexpr u32 FLEXCAN_BAUD_RATE = 250000;  
-constexpr u32 FLEXCAN_MAX_MAILBOX = 16;     
+constexpr u32 FLEXCAN_BAUD_RATE = 1000000;  
+constexpr u32 FLEXCAN_MAX_MAILBOX = 63;     
 // Logging
 // bytes_per_cycle * cycle_freq * time_to_flush_sd * safety_factor
 // 100 * 100 * 0.4 * 2 = 8000
