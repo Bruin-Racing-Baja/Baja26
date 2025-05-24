@@ -41,15 +41,9 @@ u8 Can_Bus::send_command(u32 func_id, u32 node_id, bool remote, u8 buf[]) {
   if (func_id < 0x00 || 0x1f < func_id) {
     return -1;
   }
-  if(node_id == ODRIVE_ECENT_NODE_ID || node_id == ODRIVE_ECVT_NODE_ID)
-  {
+  
     msg.id = (node_id << 5) | func_id;
-  }
-  else
-  {
-    buf[0] = static_cast<u8>(func_id);
-    func_id = 0x1f;
-  }
+  
   msg.len = 8;
   memcpy(&msg.buf, buf, 8);
   msg.flags.remote = remote;
@@ -67,7 +61,7 @@ void Can_Bus::can_parse(const CAN_message_t &msg)
   u32 parsed_node_id = (msg.id >> 5) & 0x3F;
   u32 cmd_id = msg.id & 0x1F;
   odrive_ecvt->parse_message(msg);
-  /*
+  
   switch (parsed_node_id) {
     case ODRIVE_ECVT_NODE_ID: //after figuring out cmd id change this later
       odrive_ecvt->parse_message(msg);
@@ -75,9 +69,6 @@ void Can_Bus::can_parse(const CAN_message_t &msg)
     case ODRIVE_ECENT_NODE_ID: //after figuring out cmd id change this later
       odrive_ecent->parse_message(msg);
       break;
-    case CONTROLS_PCB_NODE_ID:
-    ;
-
   }
-    */
+    
 }
