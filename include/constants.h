@@ -273,9 +273,9 @@ constexpr u8 LED_3_PIN = 9; // D2 on PCB
 constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
-constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
+constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 

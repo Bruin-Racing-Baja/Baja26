@@ -36,7 +36,7 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can_ecvt = false;
+constexpr bool wait_for_can_ecvt = true;
 constexpr bool using_ecenterlock = false; 
 constexpr bool serial_logging = true; 
 int cycles_to_wait_for_vel = 20; 
@@ -552,7 +552,11 @@ void control_function() {
   }
   control_state.right_front_wheel_rpm = right_front_wheel_rpm;
 
-  
+   if(digitalRead(LIMIT_SWITCH_IN_PIN) == LOW) {
+    digitalWrite(LED_3_PIN, HIGH); 
+  } else {
+    digitalWrite(LED_3_PIN, LOW); 
+  }
   // Controller (Position)
   // control_state.target_rpm =
   //     (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
@@ -642,8 +646,8 @@ void control_function() {
   actuator.set_velocity(control_state.velocity_command);
   // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
   if (control_cycle_count % 20 == 0) {
-    //Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
-    Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
+    Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
+    //Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
     //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   // Ecenterlock Control Function 
@@ -747,11 +751,11 @@ void debug_mode() {
   //   digitalWrite(LED_4_PIN, LOW); 
   // }
 
-  // if(digitalRead(LIMIT_SWITCH_IN_PIN) == LOW) {
-  //   digitalWrite(LED_3_PIN, HIGH); 
-  // } else {
-  //   digitalWrite(LED_3_PIN, LOW); 
-  // }
+  if(digitalRead(LIMIT_SWITCH_IN_PIN) == LOW) {
+    digitalWrite(LED_3_PIN, HIGH); 
+  } else {
+    digitalWrite(LED_3_PIN, LOW); 
+  }
 
   control_state = ControlFunctionState_init_default;
   control_state.cycle_start_us = micros();
@@ -1056,14 +1060,14 @@ void setup() {
   
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
-    digitalWrite(LED_3_PIN, HIGH);
-    u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
-    if (ecenterlock_home_status != 0) {
-      Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
-      ecenterlock.change_state(Ecenterlock::UNHOMED); 
-    } else {
-      digitalWrite(LED_3_PIN, LOW); 
-    }
+    // digitalWrite(LED_3_PIN, HIGH);
+    // //u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
+    // if (ecenterlock_home_status != 0) {
+    //   Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
+    //   ecenterlock.change_state(Ecenterlock::UNHOMED); 
+    // } else {
+    //   digitalWrite(LED_3_PIN, LOW); 
+    // }
   }
   
   // Set interrupt priorities
