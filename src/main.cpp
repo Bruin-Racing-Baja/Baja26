@@ -773,10 +773,10 @@ void control_function() {
   can_buffer.push(create_can_msg(CAN_ECVT_POSITION_ESTIMATE, RASP_NODE_ID, sync_val, odrive.get_pos_estimate())); 
 
   control_state.p_term = ACTUATOR_KP;
-  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, sync_val, ACTUATOR_KP)); 
+  //can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KP, RASP_NODE_ID, sync_val, ACTUATOR_KP)); 
 
   control_state.d_term = ACTUATOR_KD;
-  can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, sync_val, ACTUATOR_KD)); 
+  //can_buffer.push(create_can_msg(CAN_ECVT_ACTUATOR_KD, RASP_NODE_ID, sync_val, ACTUATOR_KD)); 
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
