@@ -396,7 +396,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
       if (ecenterlock.cycles_since_stopped > 10) { 
         ecenterlock.cycles_since_stopped = 0; 
         // TODO: Do we want to have that clearance difference there just in case some slipping happens? 
-        if (ecenterlock.get_position() <= ECENTERLOCK_ENGAGED_POSITION) { 
+        if (ecenterlock.get_position() >= ECENTERLOCK_ENGAGED_POSITION) { 
           // Case 1: Successfully Engaged!
           ecenterlock.set_velocity(0); 
           ecenterlock_odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
@@ -444,7 +444,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
         ecenterlock.cycles_since_stopped = 0; 
       }
 
-      if (ecenterlock.cycles_since_stopped > 10 && ecenterlock.get_position() > -0.5) {
+      if (ecenterlock.cycles_since_stopped > 10 && ecenterlock.get_position() < 0.5) {
         ecenterlock.cycles_since_stopped = 0; 
         ecenterlock.set_velocity(0); 
         ecenterlock_odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
