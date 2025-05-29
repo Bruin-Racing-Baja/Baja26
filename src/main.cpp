@@ -564,7 +564,7 @@ void control_function() {
   last_engine_rpm_error = filtered_engine_rpm_error;
 
 
-  control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
+  control_state.actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE + ACTUATOR_OFFSET_LOW;
   control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
@@ -580,7 +580,7 @@ void control_function() {
   // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
   //
   control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
-  control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
+  control_state.position_command = control_state.actuator_offset - control_state.pi_position_command;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
 
   actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
