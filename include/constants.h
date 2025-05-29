@@ -113,15 +113,14 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_HARDSTOP = 0;  // hard stop from odrive tool
-constexpr float ACTUATOR_MAX_POS = 0; 
+constexpr float ACTUATOR_MAX_POS = -2;  // hard stop from odrive tool
 constexpr float ACTUATOR_MIN_POS = -14; 
-constexpr float ACTUATOR_OFFSET_LOW = 0; 
-constexpr float ACTUATOR_OFFSET_HIGH = -10;
+constexpr float ACTUATOR_OFFSET_LOW = -2; 
+constexpr float ACTUATOR_OFFSET_HIGH = -14;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.008;   // TUNE 
+constexpr float ACTUATOR_KP = 0.006;   // TUNE 
 constexpr float ACTUATOR_KI = 0.000;   // TUNE
 constexpr float ACTUATOR_KD = 0.000;
 constexpr bool WHEEL_REF_ENABLED = true;

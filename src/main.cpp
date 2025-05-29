@@ -39,7 +39,6 @@ constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can_ecvt = false;
 constexpr bool wait_for_can_ecenterlock = true; 
 constexpr bool using_ecenterlock = false; 
-int cycles_to_wait_for_vel = 10; 
 
 /**** Global Objects ****/
 IntervalTimer timer;
@@ -107,7 +106,6 @@ u32 rw_last_sample_gear_time_us = 0;
 float last_throttle = 0.0;
 
 float last_engine_rpm_error = 0;
-float last_secondary_rpm = 0; 
 
 ControlFunctionState control_state = ControlFunctionState_init_default;
 
@@ -333,6 +331,7 @@ void on_ecenterlock_stop() {
 }
 
 inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm) {
+  int cycles_to_wait_for_vel = 10; 
 
   float avg_front_rpm = ((left_wheel_rpm + right_wheel_rpm) / 2);
 
@@ -347,6 +346,7 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
   switch(ecenterlock.get_state()) {
     case Ecenterlock::UNHOMED:
       Serial.printf("Ecenterlock State: Unhomed\n");
+      noInterrupts(); 
       break;
   
     case Ecenterlock::DISENGAGED_2WD: 
@@ -528,9 +528,6 @@ void control_function() {
   float wheel_mph = control_state.filtered_secondary_rpm *
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
-  float d_secondary_rpm = (control_state.filtered_secondary_rpm - last_secondary_rpm) / dt_s;
-  last_secondary_rpm = control_state.filtered_secondary_rpm;
-
   float left_front_wheel_rpm = 0.0;  
   if (lw_gear_time_diff_us != 0) {
     left_front_wheel_rpm = L_WHEEL_GEAR_SAMPLE_WINDOW / WHEEL_GEAR_COUNTS_PER_ROT / 
@@ -553,6 +550,7 @@ void control_function() {
   control_state.target_rpm =
       CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
 
+
   // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
   // TODO: Make sign a global variable
   control_state.engine_rpm_error =
@@ -565,10 +563,12 @@ void control_function() {
       (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
   last_engine_rpm_error = filtered_engine_rpm_error;
 
+
   control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
   control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
+
 
   // TODO: Handle integral-windup; tune and remove magic numbers
   // TODO: Make sign a global variable
@@ -581,16 +581,16 @@ void control_function() {
   //
   control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
   control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
+  control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
 
+  actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
+
+  /*
   // to not interfere with starting the car 
-  if (control_state.engine_rpm < 1600) {
-    control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_HARDSTOP); 
-  } else {
-    control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
+  if (control_state.engine_rpm < 500) {
+    control_state.position_command = 0; 
   }
-
-
-  actuator.set_position(control_state.position_command);
+  */
   
   // Ecenterlock Control Function 
   if (using_ecenterlock) {

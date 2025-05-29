@@ -25,22 +25,21 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
     return HOME_CAN_ERROR;
   }
-
-  
-  // // Move in to engaged limit if we start on outbound limit
-  // if (get_outbound_limit()) {
-  //   u32 start_time = millis();
-  //   while (!get_engage_limit()) {
-  //     // TODO: Why does this have to be set in the loop?
-  //     set_velocity(-ACTUATOR_HOME_VELOCITY);
-  //     if ((millis() - start_time) > timeout_ms) {
-  //       return HOME_TIMEOUT_ERROR;
-  //     }
-  //     delay(100);
-  //   }
-  //   set_velocity(0);
-  // }
-
+  /*
+  // Move in to engaged limit if we start on outbound limit
+  if (get_outbound_limit()) {
+    u32 start_time = millis();
+    while (!get_engage_limit()) {
+      // TODO: Why does this have to be set in the loop?
+      set_velocity(-ACTUATOR_HOME_VELOCITY);
+      if ((millis() - start_time) > timeout_ms) {
+        return HOME_TIMEOUT_ERROR;
+      }
+      delay(100);
+    }
+    set_velocity(0);
+  }
+  */
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
@@ -52,6 +51,7 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   }
 
   set_velocity(0);
+
 
   return HOME_SUCCCESS;
 }
@@ -94,12 +94,12 @@ u8 Actuator::set_velocity(float velocity) {
  * @param position The position to set
  * @return 0 if successful
  */
-u8 Actuator::set_position(float position) {
+u8 Actuator::set_position(float position, float position_estimate) {
   if (odrive->get_axis_state() == ODrive::AXIS_STATE_IDLE) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  if ((get_outbound_limit() && ACTUATOR_MAX_POS == position) || position < ACTUATOR_MIN_POS || ACTUATOR_MAX_POS < position) {
+  if ((get_outbound_limit() && ACTUATOR_MAX_POS <= position) || (get_inbound_limit() && position <= ACTUATOR_MIN_POS) ||  position <= ACTUATOR_MIN_POS || ACTUATOR_MAX_POS <= position) {
     if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
         ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
       return SET_VELOCITY_CAN_ERROR;
