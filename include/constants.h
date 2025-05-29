@@ -91,7 +91,7 @@ constexpr float ACTUATOR_ENGAGE_POS_CM =
     ACTUATOR_ENGAGE_POS_ROT * ACTUATOR_PITCH_CM; // cm
 constexpr float ACTUATOR_INBOUND_POS_CM =
     ACTUATOR_INBOUND_POS_ROT * ACTUATOR_PITCH_CM; // cm
-constexpr float ACTUATOR_HOME_VELOCITY = 4.0;     // rot / s
+constexpr float ACTUATOR_HOME_VELOCITY = -4.0;     // rot / s
 constexpr float ACTUATOR_HOME_TIMEOUT_MS = 4000;  // ms
 
 constexpr float ACTUATOR_SLOW_INBOUND_REGION_ROT = 5.0;
@@ -113,10 +113,10 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_POS = 14;  // hard stop from odrive tool
+constexpr float ACTUATOR_MAX_POS = 13;  // hard stop from odrive tool
 constexpr float ACTUATOR_MIN_POS = 2; 
-constexpr float ACTUATOR_OFFSET_LOW = 2; 
-constexpr float ACTUATOR_OFFSET_HIGH = 14;
+constexpr float ACTUATOR_OFFSET_LOW = 2;
+constexpr float ACTUATOR_OFFSET_HIGH = 13;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = ((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
@@ -270,9 +270,9 @@ constexpr u8 LED_3_PIN = 9; // D2 on PCB
 constexpr u8 LED_4_PIN = 28; // D3 on PCB
 constexpr u8 LED_5_PIN = 29; // D4 on PCB
 
-constexpr u8 LIMIT_SWITCH_IN_PIN = 11;
+constexpr u8 LIMIT_SWITCH_IN_PIN = 12;
 constexpr u8 LIMIT_SWITCH_OUT_PIN = 10;
-constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 12;
+constexpr u8 LIMIT_SWITCH_ENGAGE_PIN = 11;
 
 constexpr u8 BUTTON_PINS[] = {2, 3, 4, 5, 6};
 

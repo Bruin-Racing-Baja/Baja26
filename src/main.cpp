@@ -36,8 +36,8 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can_ecvt = false;
-constexpr bool wait_for_can_ecenterlock = true; 
+constexpr bool wait_for_can_ecvt = true;
+constexpr bool wait_for_can_ecenterlock = false; 
 constexpr bool using_ecenterlock = false; 
 
 /**** Global Objects ****/
@@ -585,13 +585,11 @@ void control_function() {
 
   actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
 
-  /*
   // to not interfere with starting the car 
-  if (control_state.engine_rpm < 500) {
+  if (control_state.engine_rpm < 1600) {
     control_state.position_command = 0; 
   }
-  */
-  
+
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
     ecenterlock_control_function(gear_rpm, right_front_wheel_rpm, left_front_wheel_rpm); 
@@ -817,11 +815,10 @@ void debug_mode() {
 
   if (control_cycle_count % 20 == 0) {
     Serial.printf("Engine RPM: %f\n", control_state.engine_rpm); 
-    Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+    //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
   }
   //Serial.printf("Engine Count %d\n", engine_count);
   // Serial.printf("Gear Count %d\n", gear_count);
-
 }
 
 void setup() {
