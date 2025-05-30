@@ -49,8 +49,9 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
     }
     delay(10);
   }
-
   set_velocity(0);
+  odrive->set_absolute_position(0);
+  odrive->set_axis_state(ODrive::AXIS_STATE_IDLE);
   // float pos_estimate = odrive->get_pos_estimate(); 
   // //set_position(ACTUATOR_MIN_POS, pos_estimate); 
 

@@ -554,7 +554,7 @@ void control_function() {
   // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
   // TODO: Make sign a global variable
   control_state.engine_rpm_error =
-      (control_state.target_rpm - control_state.filtered_engine_rpm);
+      -(control_state.target_rpm - control_state.filtered_engine_rpm);
 
   float filtered_engine_rpm_error =
       engine_rpm_derror_filter.update(control_state.engine_rpm_error);
@@ -565,7 +565,7 @@ void control_function() {
 
 
   control_state.actuator_offset = (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE + ACTUATOR_OFFSET_LOW;
-  control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
+  control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_LOW, ACTUATOR_OFFSET_HIGH);
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
 
@@ -580,15 +580,17 @@ void control_function() {
   // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
   //
   control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
-  control_state.position_command = control_state.actuator_offset - control_state.pi_position_command;
+  control_state.position_command = control_state.actuator_offset + control_state.pi_position_command;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
 
-  actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
+  
 
   // to not interfere with starting the car 
-  if (control_state.engine_rpm < 1600) {
+  if (control_state.engine_rpm < 1000) {
     control_state.position_command = 0; 
   }
+
+  actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
 
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
@@ -615,7 +617,10 @@ void control_function() {
 
   control_state.p_term = ACTUATOR_KP;
   //control_state.d_term = ACTUATOR_KD;
-
+  if(control_cycle_count % 20 == 0)
+  {
+    Serial.printf("RPM Error:%f, PI_POS: %f, Act Off: %f, Command %f\n", control_state.engine_rpm_error, control_state.pi_position_command, control_state.actuator_offset, control_state.position_command);
+  }
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
     size_t message_length = encode_pb_message(
