@@ -13,8 +13,8 @@ ODrive::ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus,
  * @param parse Pointer to function that parses received messages
  * @return 0 if successful
  */
-u8 ODrive::init() {
-  if (set_limits(ODRIVE_VEL_LIMIT, ODRIVE_CURRENT_SOFT_MAX) != 0) {
+u8 ODrive::init(float current_soft_max) {
+  if (set_limits(ODRIVE_VEL_LIMIT, current_soft_max) != 0) {
     return INIT_CAN_ERROR;
   }
   return INIT_SUCCESS;
