@@ -95,7 +95,7 @@ constexpr float ACTUATOR_ENGAGE_POS_CM =
     ACTUATOR_ENGAGE_POS_ROT * ACTUATOR_PITCH_CM; // cm
 constexpr float ACTUATOR_INBOUND_POS_CM =
     ACTUATOR_INBOUND_POS_ROT * ACTUATOR_PITCH_CM; // cm
-constexpr float ACTUATOR_HOME_VELOCITY = -4.0;     // rot / s
+constexpr float ACTUATOR_HOME_VELOCITY = 4.0;     // rot / s
 constexpr float ACTUATOR_HOME_TIMEOUT_MS = 4000;  // ms
 
 constexpr float ACTUATOR_SLOW_INBOUND_REGION_ROT = 5.0;
@@ -117,16 +117,16 @@ constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 #define MODE 7
 
 #if MODE == 7
-constexpr float ACTUATOR_MAX_POS = 14;  // hard stop from odrive tool
-constexpr float ACTUATOR_MIN_POS = 3.5; 
-constexpr float ACTUATOR_OFFSET_LOW = 3.5;
-constexpr float ACTUATOR_OFFSET_HIGH = 14;
+constexpr float ACTUATOR_MAX_POS = 16;  // hard stop from odrive tool
+constexpr float ACTUATOR_MIN_POS = 2.5; 
+constexpr float ACTUATOR_OFFSET_LOW = 2.5;
+constexpr float ACTUATOR_OFFSET_HIGH = 16;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
 constexpr float ACTUATOR_KP = 0.006;   // TUNE 
 constexpr float ACTUATOR_KI = 0.000;   // TUNE
-constexpr float ACTUATOR_KD = 0.000;
+constexpr float ACTUATOR_KD = 0.009;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2200;
 constexpr float WHEEL_REF_HIGH_RPM = 3000; // potentially move this value to 3100 to get more of power band 
@@ -289,8 +289,8 @@ constexpr u8 ECENTERLOCK_SENSOR_PIN = 27;
 constexpr u8 THROTTLE_SENSOR_PIN = 40;
 constexpr u8 BRAKE_SENSOR_PIN = 39;
 
-constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 24; 
-constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 38; 
+constexpr u8 ECENTERLOCK_SWITCH_ENGAGE = 38; 
+constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 24; 
 constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
 
 constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 10000; 

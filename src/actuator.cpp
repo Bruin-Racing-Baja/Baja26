@@ -25,35 +25,37 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
     return HOME_CAN_ERROR;
   }
-  /*
-  // Move in to engaged limit if we start on outbound limit
-  if (get_outbound_limit()) {
-    u32 start_time = millis();
-    while (!get_engage_limit()) {
-      // TODO: Why does this have to be set in the loop?
-      set_velocity(-ACTUATOR_HOME_VELOCITY);
-      if ((millis() - start_time) > timeout_ms) {
-        return HOME_TIMEOUT_ERROR;
-      }
-      delay(100);
-    }
-    set_velocity(0);
-  }
-  */
+
+  
+  // // Move in to engaged limit if we start on outbound limit
+  // if (get_outbound_limit()) {
+  //   u32 start_time = millis();
+  //   while (!get_engage_limit()) {
+  //     // TODO: Why does this have to be set in the loop?
+  //     set_velocity(-ACTUATOR_HOME_VELOCITY);
+  //     if ((millis() - start_time) > timeout_ms) {
+  //       return HOME_TIMEOUT_ERROR;
+  //     }
+  //     delay(100);
+  //   }
+  //   set_velocity(0);
+  // }
+
+  //Engage limit switch not working
+  //odrive->set_input_vel(-ACTUATOR_HOME_VELOCITY, 0);
+  set_velocity(ACTUATOR_HOME_VELOCITY);
+  delay(1000);
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
-    set_velocity(ACTUATOR_HOME_VELOCITY);
+    set_velocity(-ACTUATOR_HOME_VELOCITY);
     if ((millis() - start_time) > timeout_ms) {
       return HOME_TIMEOUT_ERROR;
     }
     delay(10);
   }
+
   set_velocity(0);
-  odrive->set_absolute_position(0);
-  odrive->set_axis_state(ODrive::AXIS_STATE_IDLE);
-  // float pos_estimate = odrive->get_pos_estimate(); 
-  // //set_position(ACTUATOR_MIN_POS, pos_estimate); 
 
   return HOME_SUCCCESS;
 }
@@ -103,7 +105,7 @@ u8 Actuator::set_position(float position, float position_estimate) {
 
   if (get_inbound_limit() || position >= ACTUATOR_MAX_POS) {
     if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
-        ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+        ODrive::INPUT_MODE_TRAP_TRAJ) != 0) {
       return SET_VELOCITY_CAN_ERROR;
     }
 
@@ -116,7 +118,7 @@ u8 Actuator::set_position(float position, float position_estimate) {
 
   // TODO: Check which input mode to use
   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
-                                  ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+                                  ODrive::INPUT_MODE_TRAP_TRAJ) != 0) {
     return SET_POSITION_CAN_ERROR;
   }
 

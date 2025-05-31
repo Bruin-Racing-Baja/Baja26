@@ -41,6 +41,8 @@ constexpr bool wait_for_can_ecenterlock = false;
 constexpr bool using_ecenterlock = false; 
 int cycles_to_wait_for_vel = 20; 
 
+bool ecent_disengage_value = false; 
+
 /**** Global Objects ****/
 IntervalTimer timer;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
@@ -280,15 +282,10 @@ void on_rw_geartooth_sensor() {
 
 void on_outbound_limit_switch() {
   odrive.set_absolute_position(0.0);
-  odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
 }
 
 void on_engage_limit_switch() {
-  // TODO: Implement better slowdown
-  float vel_estimate = odrive.get_vel_estimate();
-  if (vel_estimate < -10) {
-    odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
-  }
+
 }
 
 void on_inbound_limit_switch() {
@@ -314,9 +311,14 @@ void on_ecenterlock_switch_engage() {
 }
 
 void on_ecenterlock_switch_disengage() {
-  Serial.print("Disengage Interrupt\n");
-  if(ecenterlock.get_state() == Ecenterlock::ENGAGED_4WD) {
-    ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE);
+  // Serial.print("Disengage Interrupt\n");
+  // if(ecenterlock.get_state() == Ecenterlock::ENGAGED_4WD) {
+  //   ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE);
+  // }
+  if (digitalRead(ECENTERLOCK_SWITCH_DISENGAGE) == LOW) {
+    ecent_disengage_value = true; 
+  } else {
+    ecent_disengage_value = false; 
   }
 }
 
@@ -585,7 +587,6 @@ void control_function() {
 
   control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
 
-
   // TODO: Handle integral-windup; tune and remove magic numbers
   // TODO: Make sign a global variable
   control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
@@ -599,11 +600,13 @@ void control_function() {
   control_state.position_command = control_state.actuator_offset + control_state.pi_position_command;
   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
 
-  
-
   // to not interfere with starting the car 
-  if (control_state.engine_rpm < 1000) {
+  if (control_state.engine_rpm < 1200) {
     control_state.position_command = 0; 
+  }
+
+  if (ecent_disengage_value) {
+    control_state.position_command = ACTUATOR_MIN_POS;
   }
 
   actuator.set_position(control_state.position_command, odrive.get_pos_estimate());
@@ -778,6 +781,9 @@ void debug_mode() {
       Serial.printf("Error: Failed to write to double buffer with error %d\n",
                     write_status);
     }
+
+    control_cycle_count++;
+  
   }
 
   // Grab sensor data
@@ -835,8 +841,7 @@ void debug_mode() {
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
   if (control_cycle_count % 20 == 0) {
-    Serial.printf("Engine RPM: %f\n", control_state.engine_rpm); 
-    //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+    Serial.printf("Button %d \n", ecent_disengage_value);
   }
   //Serial.printf("Engine Count %d\n", engine_count);
   // Serial.printf("Gear Count %d\n", gear_count);
@@ -938,8 +943,8 @@ void setup() {
   attachInterrupt(RIGHT_WHEEL_SENSOR_PIN, on_rw_geartooth_sensor, FALLING); 
 
   attachInterrupt(ECENTERLOCK_SWITCH_ENGAGE, on_ecenterlock_switch_engage, FALLING); 
-  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, FALLING); 
-
+  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, CHANGE); 
+  
   // Attach limit switch interrupts
   attachInterrupt(LIMIT_SWITCH_OUT_PIN, on_outbound_limit_switch, FALLING);
   attachInterrupt(LIMIT_SWITCH_ENGAGE_PIN, on_engage_limit_switch, FALLING);
