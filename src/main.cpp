@@ -610,7 +610,7 @@ void control_function() {
     control_state.target_rpm =
         CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
   } else {
-    control_state.target_rpm = ENGINE_TARGET_RPM;
+    //control_state.target_rpm = ENGINE_TARGET_RPM;
   }
   //control_state.target_rpm = ENGINE_TARGET_RPM;
   

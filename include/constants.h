@@ -103,18 +103,12 @@ constexpr float ACTUATOR_FAST_INBOUND_VEL = 60.0;
 // Control Function
 constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 
-// 0: Gorman Anti-Stall
-// 1: Gorman Maneuverability
-// 2: Gorman Acceleration
-// 3: Penn General Purpose NOTE: DONE
-// 4: Penn Acceleration
-// 5: Penn Hill Climb NOTE: DONE
-// 6: Penn Maneuverability NOTE: DONE
-// 7: Position Control
+// 1: Arizona Endurance
+// 2: Accel
 
-#define MODE 3
+#define MODE 2
 
-#if MODE == 7
+#if MODE == 1
 constexpr float ACTUATOR_MAX_HARDSTOP = 0;  // hard stop from odrive tool
 constexpr float ACTUATOR_MAX_POS = 0; 
 constexpr float ACTUATOR_MIN_POS = -14; 
@@ -137,91 +131,29 @@ constexpr float WHEEL_REF_PIECEWISE_SLOPE =
 constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 500.0; 
 constexpr float ACTUATOR_ENGAGE_BREAKPOINT_RPM = 1000.0; 
 constexpr float ACTUATOR_ENGAGE_SLOPE = ACTUATOR_MAX_POS/ACTUATOR_ENGAGE_BREAKPOINT_RPM; 
-#elif MODE == 0
-constexpr float ACTUATOR_KP = 0.02;
-constexpr float ACTUATOR_KD = 0.015;
-constexpr float THROTTLE_KD = 0.0;
-constexpr bool WHEEL_REF_ENABLED = false;
-constexpr float ENGINE_TARGET_RPM = 2400.0; // rpm
-constexpr float WHEEL_REF_LOW_RPM = -1.0;
-constexpr float WHEEL_REF_HIGH_RPM = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = -1.0;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE = -1.0;
-#elif MODE == 1
-constexpr float ACTUATOR_KP = 0.024;
-constexpr float ACTUATOR_KD = 0.009;
-constexpr float THROTTLE_KD = 0.0;
-constexpr bool WHEEL_REF_ENABLED = false;
-constexpr float ENGINE_TARGET_RPM = 3000.0; // rpm
-constexpr float WHEEL_REF_LOW_RPM = -1.0;
-constexpr float WHEEL_REF_HIGH_RPM = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = -1.0;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE = -1.0;
 #elif MODE == 2
-constexpr float ACTUATOR_KP = 0.04;
-constexpr float ACTUATOR_KD = 0.008;
-constexpr float THROTTLE_KD = 0.0;
-constexpr bool WHEEL_REF_ENABLED = false;
-constexpr float ENGINE_TARGET_RPM = 2400; // rpm
-constexpr float WHEEL_REF_LOW_RPM = -1.0;
-constexpr float WHEEL_REF_HIGH_RPM = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = -1.0;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = -1.0;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE = -1.0;
-#elif MODE == 3
-constexpr float ACTUATOR_KP = 0.01;
-constexpr float ACTUATOR_KD = 0.004;
-constexpr float THROTTLE_KD = 10.0;
+constexpr float ACTUATOR_MAX_HARDSTOP = 0;  // hard stop from odrive tool
+constexpr float ACTUATOR_MAX_POS = 0; 
+constexpr float ACTUATOR_MIN_POS = -14; 
+constexpr float ACTUATOR_OFFSET_LOW = 0; 
+constexpr float ACTUATOR_OFFSET_HIGH = -10;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
+constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
+constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
+constexpr float ACTUATOR_KP = 0.016;   // TUNE 
+constexpr float ACTUATOR_KI = 0.000;   // TUNE
+constexpr float ACTUATOR_KD = 0.000;
 constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float ENGINE_TARGET_RPM = 3000; // rpm (was -1)
-constexpr float WHEEL_REF_LOW_RPM = 2000;
-constexpr float WHEEL_REF_HIGH_RPM = 3300;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE =
-    (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
-    (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
-#elif MODE == 4
-constexpr float ACTUATOR_KP = 0.02;
-constexpr float ACTUATOR_KD = 0.002;
-constexpr float THROTTLE_KD = 10.0;
-constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float ENGINE_TARGET_RPM = -1.0; // rpm
 constexpr float WHEEL_REF_LOW_RPM = 2100;
-constexpr float WHEEL_REF_HIGH_RPM = 3000;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 10;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE =
-    (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
-    (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
-#elif MODE == 5
-constexpr float ACTUATOR_KP = 0.02;
-constexpr float ACTUATOR_KD = 0.002;
-constexpr float THROTTLE_KD = 10.0;
-constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float ENGINE_TARGET_RPM = -1.0; // rpm
-constexpr float WHEEL_REF_LOW_RPM = 1900;
-constexpr float WHEEL_REF_HIGH_RPM = 2500;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 1;
+constexpr float WHEEL_REF_HIGH_RPM = 3100; // potentially move this value to 3100 to get more of power band 
+constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
 constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 10;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
     (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
     (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
-#elif MODE == 6
-constexpr float ACTUATOR_KP = 0.04;
-constexpr float ACTUATOR_KD = 0.004;
-constexpr float THROTTLE_KD = 10.0;
-constexpr bool WHEEL_REF_ENABLED = true;
-constexpr float ENGINE_TARGET_RPM = -1.0; // rpm
-constexpr float WHEEL_REF_LOW_RPM = 2100;
-constexpr float WHEEL_REF_HIGH_RPM = 3000;
-constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 10;
-constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 15;
-constexpr float WHEEL_REF_PIECEWISE_SLOPE =
-    (WHEEL_REF_HIGH_RPM - WHEEL_REF_LOW_RPM) /
-    (WHEEL_REF_BREAKPOINT_HIGH_MPH - WHEEL_REF_BREAKPOINT_LOW_MPH);
+constexpr float ERROR_INTEGRAL_LIMIT_VALUE = 500.0; 
+constexpr float ACTUATOR_ENGAGE_BREAKPOINT_RPM = 1000.0; 
+constexpr float ACTUATOR_ENGAGE_SLOPE = ACTUATOR_MAX_POS/ACTUATOR_ENGAGE_BREAKPOINT_RPM; 
 #endif
 
 constexpr u32 ENGINE_COUNT_MINIMUM_TIME_US = 100;
