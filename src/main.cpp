@@ -280,20 +280,24 @@ void on_rw_geartooth_sensor() {
 
 void on_outbound_limit_switch() {
   odrive.set_absolute_position(0.0);
-  odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  if (control_state.velocity_command < 0) {
+    actuator.set_velocity(0);
+  }
 }
 
 void on_engage_limit_switch() {
   // TODO: Implement better slowdown
-  float vel_estimate = odrive.get_vel_estimate();
-  if (vel_estimate < -10) {
-    odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
-  }
+  // float vel_estimate = odrive.get_vel_estimate();
+  // if (vel_estimate < -10) {
+  //   odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  // }
 }
 
 void on_inbound_limit_switch() {
   //odrive.set_absolute_position(15.0);
-  odrive.set_axis_state(ODrive::AXIS_STATE_IDLE); 
+  if (control_state.velocity_command > 0) {
+    actuator.set_velocity(0);
+  }  
 }
 
 void on_ecenterlock_switch_engage() {
