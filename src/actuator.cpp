@@ -25,37 +25,35 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
     return HOME_CAN_ERROR;
   }
-
-  
-  // // Move in to engaged limit if we start on outbound limit
-  // if (get_outbound_limit()) {
-  //   u32 start_time = millis();
-  //   while (!get_engage_limit()) {
-  //     // TODO: Why does this have to be set in the loop?
-  //     set_velocity(-ACTUATOR_HOME_VELOCITY);
-  //     if ((millis() - start_time) > timeout_ms) {
-  //       return HOME_TIMEOUT_ERROR;
-  //     }
-  //     delay(100);
-  //   }
-  //   set_velocity(0);
-  // }
-
-  //Engage limit switch not working
-  //odrive->set_input_vel(-ACTUATOR_HOME_VELOCITY, 0);
-  set_velocity(ACTUATOR_HOME_VELOCITY);
-  delay(1000);
+  /*
+  // Move in to engaged limit if we start on outbound limit
+  if (get_outbound_limit()) {
+    u32 start_time = millis();
+    while (!get_engage_limit()) {
+      // TODO: Why does this have to be set in the loop?
+      set_velocity(-ACTUATOR_HOME_VELOCITY);
+      if ((millis() - start_time) > timeout_ms) {
+        return HOME_TIMEOUT_ERROR;
+      }
+      delay(100);
+    }
+    set_velocity(0);
+  }
+  */
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
-    set_velocity(-ACTUATOR_HOME_VELOCITY);
+    set_velocity(ACTUATOR_HOME_VELOCITY);
     if ((millis() - start_time) > timeout_ms) {
       return HOME_TIMEOUT_ERROR;
     }
     delay(10);
   }
-
   set_velocity(0);
+  odrive->set_absolute_position(0);
+  odrive->set_axis_state(ODrive::AXIS_STATE_IDLE);
+  // float pos_estimate = odrive->get_pos_estimate(); 
+  // //set_position(ACTUATOR_MIN_POS, pos_estimate); 
 
   return HOME_SUCCCESS;
 }
@@ -103,18 +101,18 @@ u8 Actuator::set_position(float position) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  // if ((get_outbound_limit() && ACTUATOR_MAX_POS == position) || position < ACTUATOR_MIN_POS || ACTUATOR_MAX_POS < position) {
-  //   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
-  //       ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
-  //     return SET_VELOCITY_CAN_ERROR;
-  //   }
+  if (get_inbound_limit() || position >= ACTUATOR_MAX_POS) {
+    if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
+        ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+      return SET_VELOCITY_CAN_ERROR;
+    }
 
-  //   odrive->set_input_vel(0, 0);
+    odrive->set_input_vel(0, 0);
 
-  //   velocity_mode = true;
+    velocity_mode = true;
 
-  //   return SET_VELOCITY_OUT_LIMIT_SWITCH_ERROR;
-  // }
+    return SET_VELOCITY_OUT_LIMIT_SWITCH_ERROR;
+  }
 
   // TODO: Check which input mode to use
   if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,

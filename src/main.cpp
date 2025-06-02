@@ -281,7 +281,7 @@ void on_rw_geartooth_sensor() {
 
 void on_outbound_limit_switch() {
   odrive.set_absolute_position(0.0);
-  if (control_state.velocity_command < 0) {
+  if (odrive.get_vel_estimate() < 0) {
     actuator.set_velocity(0);
   }
 }
@@ -635,7 +635,7 @@ void control_function() {
 
   control_state.velocity_command =
        (control_state.engine_rpm_error * ACTUATOR_KP +
-      MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD));
+      MAX(0, control_state.engine_rpm_derror * ACTUATOR_KD));
   if (ecent_disengage_value) {
     control_state.position_command = 0;
   }
@@ -652,6 +652,8 @@ void control_function() {
   }
   */
   //Negation happens above
+  // if(wheel_mph < 5)
+  //   control_state.velocity_command = MIN(control_state.velocity_command, 10);
   actuator.set_velocity(control_state.velocity_command);
   // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
   if (control_cycle_count % 20 == 0) {
@@ -683,7 +685,7 @@ void control_function() {
   control_state.position_estimate = odrive.get_pos_estimate();
 
   control_state.p_term = ACTUATOR_KP;
-  //control_state.d_term = ACTUATOR_KD;
+  control_state.d_term = ACTUATOR_KD;
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
