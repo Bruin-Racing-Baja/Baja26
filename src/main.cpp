@@ -41,6 +41,7 @@ constexpr bool using_ecenterlock = false;
 constexpr bool serial_logging = true; 
 int cycles_to_wait_for_vel = 20; 
 
+bool ecent_disengage_value = false; 
 /**** Global Objects ****/
 IntervalTimer timer;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
@@ -308,10 +309,12 @@ void on_ecenterlock_switch_engage() {
 }
 
 void on_ecenterlock_switch_disengage() {
-  Serial.print("Disengage Interrupt\n");
-  if(ecenterlock.get_state() == Ecenterlock::ENGAGED_4WD) {
-    ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE);
+  if (digitalRead(ECENTERLOCK_SWITCH_DISENGAGE) == LOW) {
+    ecent_disengage_value = true; 
+  } else {
+    ecent_disengage_value = false; 
   }
+
 }
 
 inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm) {
@@ -633,7 +636,9 @@ void control_function() {
   control_state.velocity_command =
        (control_state.engine_rpm_error * ACTUATOR_KP +
       MIN(0, control_state.engine_rpm_derror * ACTUATOR_KD));
-
+  if (ecent_disengage_value) {
+    control_state.position_command = 0;
+  }
   // TODO: Move this logic to actuator ?
   /*
   if (odrive.get_pos_estimate() < ACTUATOR_SLOW_INBOUND_REGION_ROT) {
@@ -993,7 +998,7 @@ void setup() {
   attachInterrupt(RIGHT_WHEEL_SENSOR_PIN, on_rw_geartooth_sensor, FALLING); 
 
   attachInterrupt(ECENTERLOCK_SWITCH_ENGAGE, on_ecenterlock_switch_engage, FALLING); 
-  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, FALLING); 
+  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, CHANGE); 
 
   // Attach limit switch interrupts
   attachInterrupt(LIMIT_SWITCH_OUT_PIN, on_outbound_limit_switch, FALLING);
