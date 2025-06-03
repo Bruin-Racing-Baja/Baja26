@@ -141,6 +141,22 @@ void can_parse(const CAN_message_t &msg) {
   }
 }
 
+void send_command(u32 node_id, u32 cmd_id, bool remote, float val) {
+  // TODO: Fix error messages
+  CAN_message_t msg;
+  u8 buf[8] = {0};
+  if (cmd_id < 0x00 || 0x1f < cmd_id) {
+    return;
+  }
+
+  msg.id = (node_id << 5) | cmd_id;
+  msg.len = 4;
+  memcpy(msg.buf, &val, 4);
+  msg.flags.remote = remote;
+
+  int write_code = flexcan_bus.write(msg);
+}
+
 inline void write_all_leds(u8 state) {
   digitalWrite(LED_1_PIN, state);
   digitalWrite(LED_2_PIN, state);
@@ -534,7 +550,7 @@ void control_function() {
   control_state.secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
   control_state.filtered_secondary_rpm =
       filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
-
+  send_command(DASH_NODE_ID, 1, 0, control_state.filtered_secondary_rpm);
   float wheel_mph = control_state.filtered_secondary_rpm *
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
