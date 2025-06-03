@@ -36,7 +36,7 @@ enum class OperatingMode {
 /**** Operation Flags ****/
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
-constexpr bool wait_for_can_ecvt = false;
+constexpr bool wait_for_can_ecvt = true;
 constexpr bool using_ecenterlock = true; 
 constexpr bool serial_logging = true; 
 int cycles_to_wait_for_vel = 20; 
@@ -597,7 +597,7 @@ void control_function() {
   }
   */
  
-  // actuator.set_velocity(control_state.velocity_command);
+  actuator.set_velocity(control_state.velocity_command);
 
   if (control_cycle_count % 20 == 0) {
    // Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
@@ -958,7 +958,6 @@ void setup() {
   flexcan_bus.onReceive(can_parse);
 
   // Wait for ODrive can connection if enabled
-  
   if (wait_for_can_ecvt) {
     u32 led_flash_time_ms = 100;
     while (odrive.get_time_since_heartbeat_ms() > 100) {
@@ -1004,12 +1003,12 @@ void setup() {
   
   digitalWrite(LED_2_PIN, HIGH); 
   
-  // u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
-  // if (actuator_home_status != 0) {
-  //   Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
-  // } else {
-  //   digitalWrite(LED_2_PIN, LOW);
-  // }
+  u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
+  if (actuator_home_status != 0) {
+    Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
+  } else {
+    digitalWrite(LED_2_PIN, LOW);
+  }
   
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
