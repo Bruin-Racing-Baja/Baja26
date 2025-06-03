@@ -26,25 +26,17 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
     return HOME_CAN_ERROR;
   }
 
-  
-  // // Move in to engaged limit if we start on outbound limit
-  // if (get_outbound_limit()) {
-  //   u32 start_time = millis();
-  //   while (!get_engage_limit()) {
-  //     // TODO: Why does this have to be set in the loop?
-  //     set_velocity(-ACTUATOR_HOME_VELOCITY);
-  //     if ((millis() - start_time) > timeout_ms) {
-  //       return HOME_TIMEOUT_ERROR;
-  //     }
-  //     delay(100);
-  //   }
-  //   set_velocity(0);
-  // }
+  // Move inbound for 1 second if at outbound limit switch
+  if (get_outbound_limit()) {
+    u32 start_time = millis();
+    while (millis() - start_time < (timeout_ms/4)) { 
+      // TODO: Why does this have to be set in a loop? 
+      set_velocity(ACTUATOR_HOME_VELOCITY);
+      delay(100);
+    }
+    set_velocity(0);
+  }
 
-  //Engage limit switch not working
-  //odrive->set_input_vel(-ACTUATOR_HOME_VELOCITY, 0);
-  set_velocity(ACTUATOR_HOME_VELOCITY);
-  delay(1000);
   // Move out to outbound limit
   u32 start_time = millis();
   while (!get_outbound_limit()) {
@@ -56,7 +48,6 @@ u8 Actuator::home_encoder(u32 timeout_ms) {
   }
 
   set_velocity(0);
-
   return HOME_SUCCCESS;
 }
 
