@@ -942,7 +942,7 @@ void setup() {
   attachInterrupt(RIGHT_WHEEL_SENSOR_PIN, on_rw_geartooth_sensor, FALLING); 
 
   attachInterrupt(ECENTERLOCK_SWITCH_ENGAGE, on_ecenterlock_switch_engage, FALLING); 
-  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, CHANGE); 
+  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, FALLING); 
 
   // Attach limit switch interrupts
   attachInterrupt(LIMIT_SWITCH_OUT_PIN, on_outbound_limit_switch, FALLING);

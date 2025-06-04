@@ -22,12 +22,12 @@ u8 Ecenterlock::home(u32 timeout_ms) {
     return HOME_CAN_ERROR;
   }
 
-  set_velocity(-ECENTERLOCK_HOME_VEL);
+  set_velocity(ECENTERLOCK_HOME_VEL);
   float cur_pos = 0; 
 
   while ((millis() - start_time) < timeout_ms) {
     odrive->request_nonstand_pos_rel(); 
-    set_velocity(-ECENTERLOCK_HOME_VEL); 
+    set_velocity(ECENTERLOCK_HOME_VEL); 
     delay(100); 
 
     cur_pos = odrive->get_pos_rel();
