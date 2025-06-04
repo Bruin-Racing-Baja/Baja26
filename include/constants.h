@@ -64,8 +64,8 @@ constexpr float ECENTERLOCK_ENGAGE_POS_ROT = 4.0;   // ROT?
 constexpr float ECENTERLOCK_ENGAGE_POS_CM =
     ECENTERLOCK_ENGAGE_POS_ROT * ECENTERLOCK_PITCH_CM; // cm
  
-constexpr float ECENTERLOCK_ENGAGED_POSITION = -4.0; // TODO: potentially change this 
-constexpr float ECENTERLOCK_VELOCITY = -6;     // rot / s 
+constexpr float ECENTERLOCK_ENGAGED_POSITION = 4.0; // TODO: potentially change this 
+constexpr float ECENTERLOCK_VELOCITY = 6;     // rot / s 
 
 constexpr float ECENTERLOCK_HOME_VEL = -6;
 constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
@@ -140,9 +140,9 @@ constexpr float ACTUATOR_OFFSET_HIGH = -10;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.03;   // TUNE 
+constexpr float ACTUATOR_KP = 0.01;   // TUNE 
 constexpr float ACTUATOR_KI = 0.000;   // TUNE
-constexpr float ACTUATOR_KD = -0.02;
+constexpr float ACTUATOR_KD = 0.004;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2100;
 constexpr float WHEEL_REF_HIGH_RPM = 3100; // potentially move this value to 3100 to get more of power band 
