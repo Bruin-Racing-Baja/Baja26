@@ -65,10 +65,10 @@ constexpr float ECENTERLOCK_ENGAGE_POS_ROT = 4.0;   // ROT?
 constexpr float ECENTERLOCK_ENGAGE_POS_CM =
     ECENTERLOCK_ENGAGE_POS_ROT * ECENTERLOCK_PITCH_CM; // cm
  
-constexpr float ECENTERLOCK_ENGAGED_POSITION = 4.0; // TODO: potentially change this 
-constexpr float ECENTERLOCK_VELOCITY = 6;     // rot / s 
+constexpr float ECENTERLOCK_ENGAGED_POSITION = -4.0; // TODO: potentially change this 
+constexpr float ECENTERLOCK_VELOCITY = -6.0;     // rot / s 
 
-constexpr float ECENTERLOCK_HOME_VEL = -6;
+constexpr float ECENTERLOCK_HOME_VEL = 6;
 constexpr float ECENTERLOCK_HOME_TIMEOUT_MS = 4000;  // ms
 
 constexpr float ECENTERLOCK_ALLOWABLE_SHIFTING_DIFFERENCE = 100; 
