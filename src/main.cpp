@@ -614,7 +614,7 @@ void control_function() {
   }
   */
  
-  //actuator.set_velocity(control_state.velocity_command);
+  actuator.set_velocity(control_state.velocity_command);
 
   if (control_cycle_count % 20 == 0) {
    // Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
@@ -1020,12 +1020,12 @@ void setup() {
   
   digitalWrite(LED_2_PIN, HIGH); 
   
-  // u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
-  // if (actuator_home_status != 0) {
-  //   Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
-  // } else {
-  //   digitalWrite(LED_2_PIN, LOW);
-  // }
+  u8 actuator_home_status = actuator.home_encoder(ACTUATOR_HOME_TIMEOUT_MS);
+  if (actuator_home_status != 0) {
+    Serial.printf("Error: Actuator failed to home with error %d\n", actuator_home_status);
+  } else {
+    digitalWrite(LED_2_PIN, LOW);
+  }
   
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
