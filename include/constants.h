@@ -48,7 +48,8 @@ constexpr u32 L_WHEEL_GEAR_SAMPLE_WINDOW = 1;
 constexpr u32 R_WHEEL_GEAR_SAMPLE_WINDOW = 1;
  
 // ODrive
-constexpr u8 ODRIVE_NODE_ID = 0x3;                         
+constexpr u8 ODRIVE_NODE_ID = 0x3;         
+constexpr u8 DASH_NODE_ID = 0x4;                
 constexpr float ODRIVE_VEL_LIMIT = 80.0;        // rot / s    //TODO: CHange this to reasonable value
 constexpr float ODRIVE_ECVT_CURRENT_SOFT_MAX = 30.0;
 constexpr float ODRIVE_ECENT_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Check if this is the right value 
@@ -142,7 +143,7 @@ constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
 constexpr float ACTUATOR_KP = 0.03;   // TUNE 
 constexpr float ACTUATOR_KI = 0.000;   // TUNE
-constexpr float ACTUATOR_KD = -0.02;
+constexpr float ACTUATOR_KD = 0.004;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2100;
 constexpr float WHEEL_REF_HIGH_RPM = 3100; // potentially move this value to 3100 to get more of power band 
