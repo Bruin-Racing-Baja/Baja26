@@ -37,7 +37,7 @@ enum class OperatingMode {
 constexpr OperatingMode operating_mode = OperatingMode::NORMAL; 
 constexpr bool wait_for_serial = false;
 constexpr bool wait_for_can_ecvt = true;
-constexpr bool using_ecenterlock = false; 
+constexpr bool using_ecenterlock = true; 
 constexpr bool serial_logging = true; 
 int cycles_to_wait_for_vel = 20; 
 
@@ -297,20 +297,15 @@ void on_rw_geartooth_sensor() {
 void on_outbound_limit_switch() {
   odrive.set_absolute_position(0.0);
   if (odrive.get_vel_estimate() < 0) {
-    actuator.set_velocity(0);
+    odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
   }
 }
 
 void on_engage_limit_switch() {
-  // TODO: Implement better slowdown
-  // float vel_estimate = odrive.get_vel_estimate();
-  // if (vel_estimate < -10) {
-  //   odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
-  // }
+
 }
 
 void on_inbound_limit_switch() {
-  //odrive.set_absolute_position(15.0);
   if (control_state.velocity_command > 0) {
     actuator.set_velocity(0);
   }  
@@ -324,20 +319,19 @@ void on_ecenterlock_switch_engage() {
 }
 
 void on_ecenterlock_switch_disengage() {
-  Serial.print("Disengage Interrupt\n");
+  Serial.print("Engage Interrupt\n");
   if(ecenterlock.get_state() == Ecenterlock::ENGAGED_4WD) {
-    ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE);
+    ecenterlock.change_state(Ecenterlock::WANT_DISENGAGE); 
   }
+
 }
 
 inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm) {
-  // float avg_front_rpm = ((left_wheel_rpm + right_wheel_rpm) / 2);
   float avg_front_rpm = right_wheel_rpm; //TODO: if left wheel speed sensor is not working
   // GRANT: Check again
   // ecenterlock_odrive.request_nonstand_pos_rel(); 
   ecenterlock.set_prev_position(ecenterlock.get_position()); 
 
-  //float ecenterlock_position = ecenterlock_odrive.get_pos_rel() - ecenterlock.get_offset(); // TODO: Check if should add of subtract offset
   float ecenterlock_position = ecenterlock_odrive.get_pos_estimate();  
   ecenterlock.set_position(ecenterlock_position); 
 
@@ -579,50 +573,7 @@ void control_function() {
   } else {
     digitalWrite(LED_3_PIN, LOW); 
   }
-  // Controller (Position)
-  // control_state.target_rpm =
-  //     (wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * WHEEL_REF_PIECEWISE_SLOPE +
-  //     WHEEL_REF_LOW_RPM;
-  // control_state.target_rpm =
-  //     CLAMP(control_state.target_rpm, WHEEL_REF_LOW_RPM, WHEEL_REF_HIGH_RPM);
 
-  // // **** NOTE **** negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
-  // // TODO: Make sign a global variable
-  // control_state.engine_rpm_error =
-  //     (control_state.target_rpm - control_state.filtered_engine_rpm);
-
-  // float filtered_engine_rpm_error =
-  //     engine_rpm_derror_filter.update(control_state.engine_rpm_error);
-
-  // control_state.engine_rpm_derror =
-  //     (filtered_engine_rpm_error - last_engine_rpm_error) / dt_s;
-  // last_engine_rpm_error = filtered_engine_rpm_error;
-
-  // control_state.actuator_offset = ((wheel_mph - WHEEL_REF_BREAKPOINT_LOW_MPH) * ACTUATOR_OFFSET_SLOPE) + ACTUATOR_OFFSET_LOW;
-  // control_state.actuator_offset = CLAMP(control_state.actuator_offset, ACTUATOR_OFFSET_HIGH, ACTUATOR_OFFSET_LOW);
-
-  // control_state.engine_rpm_error_integral += control_state.engine_rpm_error * dt_s;
-
-  // // TODO: Handle integral-windup; tune and remove magic numbers
-  // // TODO: Make sign a global variable
-  // control_state.engine_rpm_error_integral = CLAMP(control_state.engine_rpm_error_integral, -ERROR_INTEGRAL_LIMIT_VALUE, ERROR_INTEGRAL_LIMIT_VALUE);
-  // if(fabs(control_state.engine_rpm_error) > 500 || wheel_mph > 3){
-  //   control_state.engine_rpm_error_integral = 0;
-  // }
-
-  // // **** NOTE **** Actuator offset is negative because of polarity of ODrive (shifting in is negative, shifting out is positive)
-  // //
-  // control_state.pi_position_command = control_state.engine_rpm_error * ACTUATOR_KP + control_state.engine_rpm_error_integral * ACTUATOR_KI;
-  // control_state.position_command = control_state.actuator_offset  + control_state.pi_position_command;
-
-  // // to not interfere with starting the car 
-  // if (control_state.engine_rpm < 1600) {
-  //   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_HARDSTOP); 
-  // } else {
-  //   control_state.position_command = CLAMP(control_state.position_command, ACTUATOR_MIN_POS, ACTUATOR_MAX_POS);
-  // }
-
-  // actuator.set_position(control_state.position_command);
 
   // Controller (Velocity)
   if (WHEEL_REF_ENABLED) {
@@ -634,7 +585,6 @@ void control_function() {
   } else {
     //control_state.target_rpm = ENGINE_TARGET_RPM;
   }
-  //control_state.target_rpm = ENGINE_TARGET_RPM;
   
   control_state.engine_rpm_error =
       control_state.filtered_engine_rpm - control_state.target_rpm;
@@ -651,7 +601,6 @@ void control_function() {
   control_state.velocity_command =
        (control_state.engine_rpm_error * ACTUATOR_KP +
       MAX(0, control_state.engine_rpm_derror * ACTUATOR_KD));
-  
 
   // TODO: Move this logic to actuator ?
   /*
@@ -665,14 +614,13 @@ void control_function() {
               ACTUATOR_FAST_INBOUND_VEL);
   }
   */
-  //Negation happens above
+ 
   actuator.set_velocity(control_state.velocity_command);
-  // Serial.printf("Velocity Command %f\n", -control_state.velocity_command); 
+
   if (control_cycle_count % 20 == 0) {
-    Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
-    //Serial.printf("Engine RPM: %f, Secondary: %f\n", control_state.engine_rpm, control_state.secondary_rpm); 
-    //Serial.printf("Wheel MPH, RPM: %f, %f\n", wheel_mph, wheel_rpm);
+   // Serial.printf("Inbound %d, Engage %d, Outbound %d \n", actuator.get_inbound_limit(), actuator.get_engage_limit(), actuator.get_outbound_limit());
   }
+
   // Ecenterlock Control Function 
   if (using_ecenterlock) {
     ecenterlock_control_function(gear_rpm, right_front_wheel_rpm, left_front_wheel_rpm); 
@@ -719,7 +667,7 @@ void control_function() {
   }
 
     if (serial_logging) {
-    Serial.printf("Throt Pot: %f, Secondary: %d\n", control_state.throttle, control_state.gear_count); 
+    //Serial.printf("Throt Pot: %f, Secondary: %d\n", control_state.throttle, control_state.gear_count); 
     if (control_state.outbound_limit_switch == LOW) digitalWrite(LED_1_PIN, LOW); 
     if (control_state.inbound_limit_switch == LOW) digitalWrite(LED_3_PIN, LOW); 
     if (control_state.engage_limit_switch == LOW) digitalWrite(LED_2_PIN, LOW); 
@@ -1015,7 +963,7 @@ void setup() {
   attachInterrupt(RIGHT_WHEEL_SENSOR_PIN, on_rw_geartooth_sensor, FALLING); 
 
   attachInterrupt(ECENTERLOCK_SWITCH_ENGAGE, on_ecenterlock_switch_engage, FALLING); 
-  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, FALLING); 
+  attachInterrupt(ECENTERLOCK_SWITCH_DISENGAGE, on_ecenterlock_switch_disengage, CHANGE); 
 
   // Attach limit switch interrupts
   attachInterrupt(LIMIT_SWITCH_OUT_PIN, on_outbound_limit_switch, FALLING);
@@ -1031,7 +979,6 @@ void setup() {
   flexcan_bus.onReceive(can_parse);
 
   // Wait for ODrive can connection if enabled
-  
   if (wait_for_can_ecvt) {
     u32 led_flash_time_ms = 100;
     while (odrive.get_time_since_heartbeat_ms() > 100) {
@@ -1086,14 +1033,14 @@ void setup() {
   
   // Run ecenterlock homing sequence
   if (using_ecenterlock) {
-    // digitalWrite(LED_3_PIN, HIGH);
-    // //u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
-    // if (ecenterlock_home_status != 0) {
-    //   Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
-    //   ecenterlock.change_state(Ecenterlock::UNHOMED); 
-    // } else {
-    //   digitalWrite(LED_3_PIN, LOW); 
-    // }
+    digitalWrite(LED_3_PIN, HIGH);
+    u8 ecenterlock_home_status = ecenterlock.home(ECENTERLOCK_HOME_TIMEOUT);
+    if (ecenterlock_home_status != 0) {
+      Serial.printf("Error: Ecenterlock failed to home with error %d\n", ecenterlock_home_status); 
+      ecenterlock.change_state(Ecenterlock::UNHOMED); 
+    } else {
+      digitalWrite(LED_3_PIN, LOW); 
+    }
   }
   
   // Set interrupt priorities
