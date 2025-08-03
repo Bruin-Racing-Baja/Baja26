@@ -79,6 +79,9 @@ public:
   static const u8 CMD_ERROR_INVALID_COMMAND = 2;
   static const u8 CMD_ERROR_WRITE_FAILED = 3;
 
+  const u16 TOTAL_CHARGE_USED_ID = 536;
+  const u16 TOTAL_POWER_USED_ID = 537;
+
   ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus, u32 node_id);
 
   u8 init(float current_softmax);
@@ -91,6 +94,8 @@ public:
   u8 request_temperature();
   u8 request_bus_voltage_current();
   u8 request_nonstand_pos_rel();
+  u8 request_nonstand_charge_used();
+  u8 request_nonstand_power_used();
 
   // Getters
   u32 get_time_since_heartbeat_ms();
@@ -106,6 +111,8 @@ public:
   float get_bus_voltage();
   float get_bus_current();
   float get_pos_rel(); 
+  float get_total_charge_used();
+  float get_total_power_used();
 
   // Commands
   u8 reboot();
@@ -125,6 +132,7 @@ public:
   u8 set_pos_gain(float pos_gain);
   u8 set_vel_gains(float vel_gain, float vel_integrator_gain);
 
+
 private:
   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus;
 
@@ -141,6 +149,7 @@ private:
   float iq_setpoint, iq_measured;
   float bus_voltage, bus_current;
   float pos_rel; 
+  float total_charge_used, total_power_used;
 
   u8 send_command(u32 cmd_id, bool remote, u8 buf[8]);
   u8 send_empty_command(u32 cmd_id, bool remote);

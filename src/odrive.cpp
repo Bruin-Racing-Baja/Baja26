@@ -101,8 +101,11 @@ void ODrive::parse_message(const CAN_message_t &msg) {
     break;
   case CAN_TXSDO: 
     u16 endpoint_id; 
-    memcpy(&pos_rel, msg.buf + 4, 4); 
     memcpy(&endpoint_id, msg.buf + 1, 2);
+    if(endpoint_id == TOTAL_CHARGE_USED_ID)
+      memcpy(&total_charge_used, msg.buf + 4, 4); 
+    else if(endpoint_id == TOTAL_POWER_USED_ID)
+      memcpy(&total_power_used, msg.buf + 4, 4); 
   }
 }
 
@@ -113,6 +116,17 @@ void ODrive::parse_message(const CAN_message_t &msg) {
  */
 u8 ODrive::request_nonstand_pos_rel() {
   u8 buf[8] = {0, 0xCA, 0x01, 0, 0, 0, 0, 0};
+  return send_command(CAN_RXSDO, false, buf); 
+}
+
+u8 ODrive::request_nonstand_charge_used(){
+  u8 buf[8] = {0};
+  memcpy(buf + 1, &TOTAL_CHARGE_USED_ID, 2);
+  return send_command(CAN_RXSDO, false, buf); 
+}
+u8 ODrive::request_nonstand_power_used(){
+  u8 buf[8] = {0};
+  memcpy(buf + 1, &TOTAL_POWER_USED_ID, 2);
   return send_command(CAN_RXSDO, false, buf); 
 }
 
@@ -160,6 +174,10 @@ float ODrive::get_bus_voltage() { return bus_voltage; }
 float ODrive::get_bus_current() { return bus_current; }
 
 float ODrive::get_pos_rel() { return pos_rel; }
+
+float ODrive::get_total_charge_used() {return total_charge_used; }
+
+float ODrive::get_total_power_used() {return total_power_used; }
 
 /**
  * Commands for the ODrive.
