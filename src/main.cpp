@@ -483,6 +483,8 @@ inline void ecenterlock_control_function(float gear_rpm, float left_wheel_rpm, f
 
 // ඞ
 void control_function() {
+  odrive.request_nonstand_charge_used();
+  odrive.request_nonstand_power_used();
   control_state = ControlFunctionState_init_default;
   control_state.cycle_start_us = micros();
   float dt_s = CONTROL_FUNCTION_INTERVAL_MS * SECONDS_PER_MS;
@@ -696,6 +698,9 @@ void control_function() {
 
   control_state.p_term = ACTUATOR_KP;
   control_state.d_term = ACTUATOR_KD;
+
+  control_state.total_charge_used = odrive.get_total_charge_used();
+  control_state.total_power_used = odrive.get_total_power_used();
 
   if (sd_initialized && !logging_disconnected) {
     // Serialize control state
