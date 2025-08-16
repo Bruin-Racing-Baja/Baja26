@@ -104,8 +104,8 @@ constexpr float ACTUATOR_FAST_INBOUND_VEL = 60.0;
 // Control Function
 constexpr u32 CONTROL_FUNCTION_INTERVAL_MS = 10; // ms
 
-// 1: Arizona Endurance
-// 2: Accel
+// 1: Accel
+// 2: Arizona Endurance
 
 #define MODE 2
 
@@ -118,9 +118,9 @@ constexpr float ACTUATOR_OFFSET_HIGH = -10;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.01;   // TUNE 
-constexpr float ACTUATOR_KI = 0.000;   // TUNE
-constexpr float ACTUATOR_KD = 0.004;
+constexpr float ACTUATOR_KP = 0.03;   
+constexpr float ACTUATOR_KI = 0.000;   
+constexpr float ACTUATOR_KD = 0.000;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2200;
 constexpr float WHEEL_REF_HIGH_RPM = 3600; 
@@ -141,12 +141,12 @@ constexpr float ACTUATOR_OFFSET_HIGH = -10;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH = 0;
 constexpr float ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH = 20.0;
 constexpr float ACTUATOR_OFFSET_SLOPE = -((ACTUATOR_OFFSET_HIGH - ACTUATOR_OFFSET_LOW) / (ACTUATOR_OFFSET_BREAKPOINT_LOW_MPH - ACTUATOR_OFFSET_BREAKPOINT_HIGH_MPH));
-constexpr float ACTUATOR_KP = 0.03;
+constexpr float ACTUATOR_KP = 0.01;
 constexpr float ACTUATOR_KI = 0.000;
-constexpr float ACTUATOR_KD = 0.000;
+constexpr float ACTUATOR_KD = 0.004;
 constexpr bool WHEEL_REF_ENABLED = true;
 constexpr float WHEEL_REF_LOW_RPM = 2100;
-constexpr float WHEEL_REF_HIGH_RPM = 3100;
+constexpr float WHEEL_REF_HIGH_RPM = 3100; 
 constexpr float WHEEL_REF_BREAKPOINT_LOW_MPH = 5;
 constexpr float WHEEL_REF_BREAKPOINT_HIGH_MPH = 10;
 constexpr float WHEEL_REF_PIECEWISE_SLOPE =
