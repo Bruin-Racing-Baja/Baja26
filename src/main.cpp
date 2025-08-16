@@ -306,9 +306,9 @@ void on_engage_limit_switch() {
 }
 
 void on_inbound_limit_switch() {
-  if (control_state.velocity_command > 0) {
-    actuator.set_velocity(0);
-  }  
+  if (odrive.get_vel_estimate() < 0) {
+    odrive.set_axis_state(ODrive::AXIS_STATE_IDLE);
+  }
 }
 
 void on_ecenterlock_switch_engage() {
