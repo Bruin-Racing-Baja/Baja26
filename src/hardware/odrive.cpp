@@ -1,6 +1,6 @@
 #include "constants.h"
 #include <FlexCAN_T4.h>
-#include <odrive.h>
+#include <hardware/odrive.h>
 
 ODrive::ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus,
                u32 node_id)

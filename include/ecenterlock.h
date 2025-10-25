@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <constants.h>
-#include <odrive.h>
+#include <hardware/odrive.h>
 #include <types.h>
 
 class Ecenterlock {

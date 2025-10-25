@@ -1,7 +1,7 @@
 #include "core_pins.h"
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
-#include <actuator.h>
+#include <hardware/actuator.h>
 #include <ecenterlock.h>
 #include <constants.h>
 #include <iirfilter.h>
@@ -15,7 +15,7 @@
 #include <cstring>
 #include <macros.h>
 #include <median_filter.h>
-#include <odrive.h>
+#include <hardware/odrive.h>
 #include <operation_header.pb.h>
 #include <pb.h>
 #include <pb_common.h>
@@ -870,6 +870,10 @@ void debug_mode() {
 
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+//                Setup                                                        //
+/////////////////////////////////////////////////////////////////////////////////
+
 void setup() {
   // Pin setup
   for (u8 pin = 0; pin < NUM_DIGITAL_PINS; pin++) {
@@ -1084,6 +1088,10 @@ void setup() {
     break;
   }
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+//                Loop                                                         //
+/////////////////////////////////////////////////////////////////////////////////
 
 void loop() {
   // LED indicators
