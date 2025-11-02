@@ -95,6 +95,9 @@ inline void write_all_leds(u8 state) {
   digitalWrite(LED_4_PIN, state);
   digitalWrite(LED_5_PIN, state);
 }
+/**** CAN Bus Object ****/
+static CanBus CAN(flexcan_bus, odrive, ecenterlock_odrive);
+
 
 void setup() {
   // Pin setup
@@ -200,12 +203,14 @@ void setup() {
   attachInterrupt(LIMIT_SWITCH_IN_PIN, on_inbound_limit_switch, FALLING);
 
   // Initialize CAN bus
+  CanBus::bind(&CAN);
+  CAN.begin(); 
+
   flexcan_bus.begin();
   flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);
   flexcan_bus.setMaxMB(FLEXCAN_MAX_MAILBOX);
   flexcan_bus.enableFIFO();
   flexcan_bus.enableFIFOInterrupt();
-  flexcan_bus.onReceive(can_parse);
 
   // Wait for ODrive can connection if enabled
   if (wait_for_can_ecvt) {
