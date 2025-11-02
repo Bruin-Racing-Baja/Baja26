@@ -74,7 +74,7 @@ IIRFilter engine_rpm_derror_filter(ENGINE_RPM_DERROR_FILTER_B,
                                    ENGINE_RPM_DERROR_FILTER_N);
 IIRFilter gear_rpm_time_filter(GEAR_RPM_TIME_FILTER_B, GEAR_RPM_TIME_FILTER_A,
                                GEAR_RPM_TIME_FILTER_M, GEAR_RPM_TIME_FILTER_N);
-IIRFilter throttle_fitler(THROTTLE_FILTER_B, THROTTLE_FILTER_A,
+IIRFilter throttle_filter(THROTTLE_FILTER_B, THROTTLE_FILTER_A,
                           THROTTLE_FILTER_M, THROTTLE_FILTER_N);
 
 MedianFilter engine_rpm_median_filter(ENGINE_RPM_MEDIAN_FILTER_WINDOW);

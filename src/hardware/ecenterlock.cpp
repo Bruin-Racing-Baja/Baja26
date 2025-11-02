@@ -3,9 +3,7 @@
 #include <macros.h>
 #include <hardware/odrive.h>
 #include <types.h>
-
-// External reference for cycle count
-extern u32 control_cycle_count;
+#include <control/cvt_controller.h>
 
 /**
  * Constructor for the ecenterlock
@@ -254,5 +252,4 @@ void Ecenterlock::control_update(float gear_rpm, float left_wheel_rpm, float rig
       }
       break; 
   }
-  control_cycle_count++;
 }

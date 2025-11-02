@@ -22,3 +22,8 @@ When you want to switch behavior without changing the underlying functions:
 controller.setMode(CvtController::Mode::ButtonShift);
 // or:
 controller.setMode(CvtController::Mode::Debug);
+
+If you ever want to read the current cycle for logging or conditions, use:
+
+const uint32_t cycle = CvtController::cycleCount();
+// ... use `cycle` if needed ...
