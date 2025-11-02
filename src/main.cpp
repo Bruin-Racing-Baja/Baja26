@@ -10,6 +10,8 @@
 #include <logging/logger.h>
 #include <constants.h>
 #include <iirfilter.h>
+#include <control_function_state.pb.h>
+
 // clang-format off
 #include <SPI.h>
 // clang-format on
@@ -53,6 +55,8 @@ ODrive ecenterlock_odrive(&flexcan_bus, ECENTERLOCK_ODRIVE_NODE_ID);
 
 Actuator actuator(&odrive);
 Ecenterlock ecenterlock(&ecenterlock_odrive);
+
+CvtController controller;
 
 IIRFilter engine_rpm_rotation_filter(ENGINE_RPM_ROTATION_FILTER_B,
                                      ENGINE_RPM_ROTATION_FILTER_A,
@@ -291,21 +295,27 @@ void setup() {
   size_t num_bytes_written = log_file.write(message_buffer, message_length);
   log_file.flush();
 
+  CvtController::bind(&controller);
+
   // Attach timer interrupt
   switch (operating_mode) {
-  case OperatingMode::NORMAL:
-    timer.begin(control_function, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
-    break;
-  case OperatingMode::BUTTON_SHIFT:
-    timer.begin(button_shift_mode, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
-    break;
-  case OperatingMode::DEBUG:
-    timer.begin(debug_mode, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
-    break;
-  case OperatingMode::NONE:
-    break;
+    case OperatingMode::NORMAL:
+      controller.setMode(CvtController::Mode::Normal);
+      break;
+    case OperatingMode::BUTTON_SHIFT:
+      controller.setMode(CvtController::Mode::ButtonShift);
+      break;
+    case OperatingMode::DEBUG:
+      controller.setMode(CvtController::Mode::Debug);
+      break;
+    default:
+      controller.setMode(CvtController::Mode::Normal);
+      break;
   }
+
+timer.begin(CvtController::isrTrampoline, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
 }
+
 
 void loop() {
   // LED indicators

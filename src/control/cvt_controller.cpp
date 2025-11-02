@@ -9,6 +9,8 @@
 #include <macros.h>
 #include <iirfilter.h>
 #include <median_filter.h>
+#include <Arduino.h>
+#include <control_function_state.pb.h>
 
 // External references to global objects from main.cpp
 extern ODrive odrive;
@@ -432,4 +434,37 @@ void debug_mode() {
   //Serial.printf("Engine Count %d\n", engine_count);
   // Serial.printf("Gear Count %d\n", gear_count);
 
+}
+
+extern void control_function();
+extern void button_shift_mode();
+extern void debug_mode();
+
+// Static instance pointer definition
+CvtController* CvtController::instance_ = nullptr;
+
+// Static ISR trampoline that the IntervalTimer can call.
+void CvtController::isrTrampoline() {
+  if (instance_) {
+    instance_->tick();
+  }
+}
+
+// One tick of the controller: dispatch to the selected mode.
+// This preserves your current behavior by calling the existing functions.
+void CvtController::tick() {
+  switch (mode_) {
+    case Mode::Normal: {
+      control_function();
+      break;
+    }
+    case Mode::ButtonShift: {
+      button_shift_mode();
+      break;
+    }
+    case Mode::Debug: {
+      debug_mode();
+      break;
+    }
+  }
 }

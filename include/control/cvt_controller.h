@@ -1,16 +1,30 @@
-#ifndef CVT_CONTROLLER_H
-#define CVT_CONTROLLER_H
+#pragma once
+#include <Arduino.h>
 
-#include <control_function_state.pb.h>
-#include <types.h>
+class CvtController {
+public:
+  enum class Mode {
+    Normal,
+    ButtonShift,
+    Debug
+  };
 
-// External reference for cycle count
-extern ControlFunctionState control_state;
-extern u32 control_cycle_count;
+  CvtController() = default;
 
-// Control mode functions
-void control_function();
-void button_shift_mode();
-void debug_mode();
+  // Bind the global trampoline to this instance
+  static void bind(CvtController* self) { instance_ = self; }
 
-#endif
+  // ISR-safe trampoline (hook this to IntervalTimer)
+  static void isrTrampoline();
+
+  // Select and read the active mode
+  void setMode(Mode m) { mode_ = m; }
+  Mode mode() const { return mode_; }
+
+  // One control tick (called by isrTrampoline)
+  void tick();
+
+private:
+  static CvtController* instance_;
+  Mode mode_ = Mode::Normal;
+};
