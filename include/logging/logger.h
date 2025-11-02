@@ -43,6 +43,9 @@ public:
 
   u8     write_to_double_buffer(u8 data[], size_t data_length, bool split);
 
+  bool& disconnected() { return logging_disconnected_; }           // mutable ref
+  bool  is_disconnected() const { return logging_disconnected_; }
+
   // Optional accessor for message buffer (so other modules can reuse it)
   u8* message_buffer() { return message_buffer_; }
 

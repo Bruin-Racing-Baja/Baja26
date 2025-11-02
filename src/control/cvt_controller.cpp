@@ -40,16 +40,18 @@ extern bool using_ecenterlock;
 extern bool serial_logging;
 
 // Logger globals / helpers (leave as-is; we’re just calling them)
-extern volatile bool logging_disconnected;
+static Logger& LOG = Logger::instance();
+
 extern u8 cur_buffer_num;
 extern LogBuffer double_buffer[2];
-extern u8 message_buffer[MESSAGE_BUFFER_SIZE];
+/*extern u8 message_buffer[MESSAGE_BUFFER_SIZE];
 extern size_t encode_pb_message(u8 buffer[], size_t buffer_length, u8 id,
                                 const pb_msgdesc_t* fields,
                                 const void* message_struct);
 extern u8 write_to_double_buffer(u8 data[], size_t data_length,
                                  LogBuffer double_buffer[2], u8* buffer_num,
                                  bool split);
+*/
 
 // Sensors (as defined in sensors.cpp)
 extern Sensor engine_sensor;
@@ -268,12 +270,12 @@ void CvtController::updateDebug() {
   control_state_.total_power_used  = odrive.get_total_power_used();
 
   // Logging (unchanged)
-  if (sd_initialized && !logging_disconnected) {
-    size_t message_length = encode_pb_message(
-        message_buffer, MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
+  if (sd_initialized && !LOG.disconnected()) {
+    size_t message_length = LOG.encode_pb_message(
+        LOG.message_buffer(), MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
         ControlFunctionState_fields, &control_state_);
-    u8 write_status = write_to_double_buffer(
-        message_buffer, message_length, double_buffer, &cur_buffer_num, false);
+    u8 write_status = LOG.write_to_double_buffer(
+        LOG.message_buffer(), message_length, false);
     if (write_status != 0) {
       Serial.printf("Error: Failed to write to double buffer with error %d\n",
                     write_status);
@@ -466,15 +468,15 @@ void CvtController::updateNormal() {
   control_state_.total_charge_used = odrive.get_total_charge_used();
   control_state_.total_power_used = odrive.get_total_power_used();
 
-  if (sd_initialized && !logging_disconnected) {
+  if (sd_initialized && !LOG.disconnected()) {
     // Serialize control state
-    size_t message_length = encode_pb_message(
-        message_buffer, MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
+    size_t message_length = LOG.encode_pb_message(
+        LOG.message_buffer(), MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
         &ControlFunctionState_msg, &control_state_);
 
     // Write to double buffer
-    u8 write_status = write_to_double_buffer(
-        message_buffer, message_length, double_buffer, &cur_buffer_num, false);
+    u8 write_status = LOG.write_to_double_buffer(
+        LOG.message_buffer(), message_length, false);
 
     if (write_status != 0) {
       Serial.printf("Error: Failed to write to double buffer with error %d\n",
