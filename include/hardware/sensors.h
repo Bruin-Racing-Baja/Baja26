@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <types.h>
-#include <iirfilter.h>
+#include <filters/iirfilter.h>
 
 // Sensor class - encapsulates common sensor timing/counting logic
 class Sensor {

@@ -9,7 +9,7 @@
 #include <control/cvt_controller.h>
 #include <logging/logger.h>
 #include <constants.h>
-#include <iirfilter.h>
+#include <filters/iirfilter.h>
 #include <control_function_state.pb.h>
 
 // clang-format off
@@ -21,7 +21,7 @@
 #include <control_function_state.pb.h>
 #include <cstring>
 #include <macros.h>
-#include <median_filter.h>
+#include <filters/median_filter.h>
 #include <operation_header.pb.h>
 #include <pb.h>
 #include <pb_common.h>
@@ -98,6 +98,8 @@ inline void write_all_leds(u8 state) {
 /**** CAN Bus Object ****/
 static CanBus CAN(flexcan_bus, odrive, ecenterlock_odrive);
 
+/**** Logger Object ****/
+static Logger& logger = Logger::instance();
 
 void setup() {
   // Pin setup
@@ -182,7 +184,7 @@ void setup() {
       log_name[sizeof(log_name) - 1] = '\0';
     }
     Serial.printf("Info: Logging to %s\n", log_name);
-    logger_init(log_name);
+    logger.logger_init(log_name);
   }
 
   // Initialize sensor system with filter pointer
@@ -205,12 +207,6 @@ void setup() {
   // Initialize CAN bus
   CanBus::bind(&CAN);
   CAN.begin(); 
-
-  flexcan_bus.begin();
-  flexcan_bus.setBaudRate(FLEXCAN_BAUD_RATE);
-  flexcan_bus.setMaxMB(FLEXCAN_MAX_MAILBOX);
-  flexcan_bus.enableFIFO();
-  flexcan_bus.enableFIFOInterrupt();
 
   // Wait for ODrive can connection if enabled
   if (wait_for_can_ecvt) {
@@ -294,11 +290,11 @@ void setup() {
   operation_header.wheel_ref_breakpoint_high_mph =
       WHEEL_REF_BREAKPOINT_HIGH_MPH;
 
-  size_t message_length = encode_pb_message(
-      message_buffer, MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
-      &OperationHeader_msg, &operation_header);
-  size_t num_bytes_written = log_file.write(message_buffer, message_length);
-  log_file.flush();
+  size_t message_length = logger.encode_pb_message(
+  logger.message_buffer(), MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
+  &OperationHeader_msg, &operation_header);
+  logger.write_to_double_buffer(logger.message_buffer(), message_length, false);
+  logger.logger_flush();
 
   CvtController::bind(&controller);
 
@@ -328,5 +324,5 @@ void loop() {
   // digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
 
   // Flush SD card if buffer full
-  logger_flush();
+  logger.logger_flush();
 }

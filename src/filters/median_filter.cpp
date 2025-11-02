@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <malloc.h>
-#include <median_filter.h>
+#include <filters/median_filter.h>
 #include <types.h>
 
 MedianFilter::MedianFilter(size_t window_size_) {

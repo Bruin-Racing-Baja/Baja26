@@ -1,43 +1,63 @@
-#ifndef LOGGER_H
-#define LOGGER_H
-
+#pragma once
 #include <Arduino.h>
 #include <SD.h>
-#include <types.h>
 #include <pb.h>
+#include <pb_common.h>
+#include <pb_encode.h>
+#include <types.h>
 #include <constants.h>
 
-// Logging state
-extern volatile bool logging_disconnected;
-
+// -----------------------------------------------------------------------------
+// Buffer data structure
+// -----------------------------------------------------------------------------
 struct LogBuffer {
-  char buffer[LOG_BUFFER_SIZE];
-  size_t idx;
-  bool full;
+  u8     buffer[LOG_BUFFER_SIZE];
+  size_t idx = 0;
+  bool   full = false;
 };
 
-extern u8 cur_buffer_num;
-extern LogBuffer double_buffer[2];
-extern u8 message_buffer[MESSAGE_BUFFER_SIZE];
-extern File log_file;
+// -----------------------------------------------------------------------------
+// Return codes
+// -----------------------------------------------------------------------------
+static constexpr u8 DOUBLE_BUFFER_SUCCESS     = 0;
+static constexpr u8 DOUBLE_BUFFER_FULL_ERROR  = 1;
+static constexpr u8 DOUBLE_BUFFER_INDEX_ERROR = 2;
 
-// Logging functions
-size_t encode_pb_message(u8 buffer[], size_t buffer_length, u8 id,
-                         const pb_msgdesc_t *fields,
-                         const void *message_struct);
+// -----------------------------------------------------------------------------
+// Logger class (fully encapsulated, no globals)
+// -----------------------------------------------------------------------------
+class Logger {
+public:
+  // Singleton access (Meyers pattern)
+  static Logger& instance() {
+    static Logger s;
+    return s;
+  }
 
-constexpr u8 DOUBLE_BUFFER_SUCCESS = 0;
-constexpr u8 DOUBLE_BUFFER_FULL_ERROR = 1;
-constexpr u8 DOUBLE_BUFFER_INDEX_ERROR = 2;
+  // Main methods (same names as your procedural API)
+  bool   logger_init(const char* log_name);
+  void   logger_flush();
 
-u8 write_to_double_buffer(u8 data[], size_t data_length,
-                          LogBuffer double_buffer[2], u8 *buffer_num,
-                          bool split);
+  size_t encode_pb_message(u8 buffer[], size_t buffer_length, u8 id,
+                           const pb_msgdesc_t* fields, const void* message_struct);
 
-// Initialize logging system
-bool logger_init(const char* log_name);
+  u8     write_to_double_buffer(u8 data[], size_t data_length, bool split);
 
-// Call in main loop to flush buffers
-void logger_flush();
+  // Optional accessor for message buffer (so other modules can reuse it)
+  u8* message_buffer() { return message_buffer_; }
 
-#endif
+private:
+  Logger() = default;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
+
+  // ---------------------------------------------------------------------------
+  // Private state — these fix your "identifier undefined" errors
+  // ---------------------------------------------------------------------------
+  File log_file_;                        // replaces global log_file
+  bool logging_disconnected_ = false;    // replaces global logging_disconnected
+  u8   cur_buffer_num_ = 0;              // replaces global cur_buffer_num
+  LogBuffer double_buffer_[2];           // replaces global double_buffer[2]
+  u8   message_buffer_[MESSAGE_BUFFER_SIZE]; // replaces global message_buffer
+};
+

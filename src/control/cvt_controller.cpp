@@ -7,8 +7,8 @@
 #include <constants.h>
 #include <macros.h>
 #include <types.h>
-#include <iirfilter.h>
-#include <median_filter.h>
+#include <filters/iirfilter.h>
+#include <filters/median_filter.h>
 #include <hardware/odrive.h>
 #include <hardware/actuator.h>
 #include <hardware/ecenterlock.h>
