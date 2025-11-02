@@ -4,48 +4,60 @@
 #include <Arduino.h>
 #include <types.h>
 #include <iirfilter.h>
-#include <median_filter.h>
 
-// Sensor state - these will be extern, defined in sensors.cpp
-extern volatile u32 engine_count;
-extern volatile u32 engine_time_diff_us;
-extern volatile float filt_engine_time_diff_us;
-extern u32 last_engine_time_us;
-extern u32 last_sample_engine_time_us;
+// Sensor class - encapsulates common sensor timing/counting logic
+class Sensor {
+private:
+    volatile u32 count = 0;
+    volatile u32 time_diff_us = 0;
+    volatile float filtered_time_diff_us = 0;
+    u32 last_time_us = 0;
+    u32 last_sample_time_us = 0;
+    
+    // Configuration
+    u32 minimum_time_us;
+    u32 sample_window;
+    IIRFilter* filter_ptr;
+    bool use_filter;
+    
+public:
+    // Constructor
+    Sensor(u32 min_time, u32 window, IIRFilter* filter = nullptr);
+    
+    // Main ISR function - call this from interrupt handler
+    void on_sensor_trigger();
+    
+    // Getters for sensor data
+    u32 get_count() const { return count; }
+    u32 get_time_diff() const { return time_diff_us; }
+    float get_filtered_time_diff() const { return filtered_time_diff_us; }
+    
+    // Configuration
+    void set_filter(IIRFilter* filter) { filter_ptr = filter; use_filter = (filter != nullptr); }
+};
 
-extern volatile u32 gear_count;
-extern volatile u32 gear_time_diff_us;
-extern volatile float last_gear_time_diff_us;
-extern u32 last_gear_time_us;
-extern u32 last_sample_gear_time_us;
+// Global sensor objects
+extern Sensor engine_sensor;
+extern Sensor gear_sensor;
+extern Sensor lw_gear_sensor;
+extern Sensor rw_gear_sensor;
 
-extern volatile u32 lw_gear_count;
-extern volatile u32 lw_gear_time_diff_us;
-extern volatile float lw_last_gear_time_diff_us;
-extern u32 lw_last_gear_time_us;
-extern u32 lw_last_sample_gear_time_us;
-
-extern volatile u32 rw_gear_count;
-extern volatile u32 rw_gear_time_diff_us;
-extern volatile float rw_last_gear_time_diff_us;
-extern u32 rw_last_gear_time_us;
-extern u32 rw_last_sample_gear_time_us;
-
-// Filter references - will be set by sensors_init()
-extern IIRFilter* engine_rpm_rotation_filter_ptr;
-
-// Sensor ISR functions
+// Sensor ISR functions - these call the sensor objects
 void on_engine_sensor();
 void on_geartooth_sensor();
 void on_lw_geartooth_sensor();
 void on_rw_geartooth_sensor();
+
+// Limit switch ISRs
 void on_outbound_limit_switch();
 void on_engage_limit_switch();
 void on_inbound_limit_switch();
+
+// Ecenterlock switch ISRs
 void on_ecenterlock_switch_engage();
 void on_ecenterlock_switch_disengage();
 
-// Initialization function to set filter pointers
+// Initialization function
 void sensors_init(IIRFilter* engine_rotation_filter);
 
 #endif

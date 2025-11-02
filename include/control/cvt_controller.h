@@ -2,10 +2,11 @@
 #define CVT_CONTROLLER_H
 
 #include <control_function_state.pb.h>
+#include <types.h>
 
-// Control state - accessible externally
+// External reference for cycle count
 extern ControlFunctionState control_state;
-//extern u32 control_cycle_count;
+extern u32 control_cycle_count;
 
 // Control mode functions
 void control_function();

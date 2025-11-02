@@ -19,6 +19,11 @@ extern bool using_ecenterlock;
 extern bool sd_initialized;
 extern bool serial_logging;
 
+extern Sensor engine_sensor;
+extern Sensor gear_sensor;
+extern Sensor lw_gear_sensor;
+extern Sensor rw_gear_sensor;
+
 extern IIRFilter engine_rpm_time_filter;
 extern IIRFilter engine_rpm_derror_filter;
 extern IIRFilter gear_rpm_time_filter;
@@ -64,22 +69,22 @@ void control_function() {
 
   // Grab sensor data
   noInterrupts();
-  control_state.engine_count = engine_count;
-  control_state.gear_count = gear_count;
-  control_state.lw_gear_count = lw_gear_count;
-  control_state.rw_gear_count = rw_gear_count;
+  control_state.engine_count = engine_sensor.get_count();
+  control_state.gear_count = gear_sensor.get_count();
+  control_state.lw_gear_count = lw_gear_sensor.get_count();
+  control_state.rw_gear_count = rw_gear_sensor.get_count();
 
-  float cur_engine_time_diff_us = engine_time_diff_us;
-  float cur_filt_engine_time_diff_us = filt_engine_time_diff_us;
-  float cur_gear_time_diff_us = gear_time_diff_us;
-  float lw_cur_gear_time_diff_us = lw_gear_time_diff_us; 
-  float rw_cur_gear_time_diff_us = rw_gear_time_diff_us; 
+  float cur_engine_time_diff_us = engine_sensor.get_time_diff();
+  float cur_filt_engine_time_diff_us = engine_sensor.get_filtered_time_diff();
+  float cur_gear_time_diff_us = gear_sensor.get_time_diff();
+  float lw_cur_gear_time_diff_us = lw_gear_sensor.get_time_diff(); 
+  float rw_cur_gear_time_diff_us = rw_gear_sensor.get_time_diff(); 
   interrupts();
 
   // Calculate instantaneous RPMs
   // TODO: Fix edge case of no movement
   control_state.engine_rpm = 0;
-  if (engine_time_diff_us != 0) {
+  if (cur_engine_time_diff_us != 0) {
     control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
                                cur_engine_time_diff_us * US_PER_SECOND *
                                SECONDS_PER_MINUTE;
@@ -96,7 +101,7 @@ void control_function() {
 
   float gear_rpm = 0.0;
   float filt_gear_rpm = 0.0;
-  if (gear_time_diff_us != 0) {
+  if (cur_gear_time_diff_us != 0) {
     gear_rpm = GEAR_SAMPLE_WINDOW / GEAR_COUNTS_PER_ROT /
                cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
     filt_gear_rpm = gear_rpm_time_filter.update(gear_rpm);
@@ -114,7 +119,7 @@ void control_function() {
   last_secondary_rpm = control_state.filtered_secondary_rpm;
 
   float left_front_wheel_rpm = 0.0;  
-  if (lw_gear_time_diff_us != 0) {
+  if (lw_cur_gear_time_diff_us != 0) {
     left_front_wheel_rpm = L_WHEEL_GEAR_SAMPLE_WINDOW / WHEEL_GEAR_COUNTS_PER_ROT / 
                           lw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
   }
@@ -122,9 +127,9 @@ void control_function() {
 
   float right_front_wheel_rpm = 0.0; 
   float filt_rfw_rpm = 0.0; 
-  if (rw_gear_time_diff_us != 0) {
+  if (rw_cur_gear_time_diff_us != 0) {
     right_front_wheel_rpm = R_WHEEL_GEAR_SAMPLE_WINDOW / WHEEL_GEAR_COUNTS_PER_ROT / 
-                          rw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
+                            rw_cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
   }
   control_state.right_front_wheel_rpm = right_front_wheel_rpm;
 
@@ -236,8 +241,6 @@ void control_function() {
   control_state.cycle_count++;
 }
 
-// This continues from Part 1 - add this after control_function()
-
 void button_shift_mode() {
   bool button_pressed[5] = {false, false, false, false, false};
   for (size_t i = 0; i < 5; i++) {
@@ -317,16 +320,16 @@ void debug_mode() {
 
   // Grab sensor data
   noInterrupts();
-  control_state.engine_count = engine_count;
-  control_state.gear_count = gear_count;
-  control_state.lw_gear_count = lw_gear_count;
-  control_state.rw_gear_count = rw_gear_count;
+  control_state.engine_count = engine_sensor.get_count();
+  control_state.gear_count = gear_sensor.get_count();
+  control_state.lw_gear_count = lw_gear_sensor.get_count();
+  control_state.rw_gear_count = rw_gear_sensor.get_count();
 
-  float cur_engine_time_diff_us = engine_time_diff_us;
-  float cur_filt_engine_time_diff_us = filt_engine_time_diff_us;
-  float cur_gear_time_diff_us = gear_time_diff_us;
-  float lw_cur_gear_time_diff_us = lw_gear_time_diff_us; 
-  float rw_cur_gear_time_diff_us = rw_gear_time_diff_us; 
+  float cur_engine_time_diff_us = engine_sensor.get_time_diff();
+  float cur_filt_engine_time_diff_us = engine_sensor.get_filtered_time_diff();
+  float cur_gear_time_diff_us = gear_sensor.get_time_diff();
+  float lw_cur_gear_time_diff_us = lw_gear_sensor.get_time_diff(); 
+  float rw_cur_gear_time_diff_us = rw_gear_sensor.get_time_diff(); 
   interrupts();
 
     // Populate control state
@@ -368,12 +371,14 @@ void debug_mode() {
 
   // Grab sensor data
   noInterrupts();
-  control_state.engine_count = engine_count;
-  control_state.gear_count = gear_count;
+  control_state.engine_count = engine_sensor.get_count();
+  control_state.gear_count = gear_sensor.get_count();
+  control_state.lw_gear_count = lw_gear_sensor.get_count();
+  control_state.rw_gear_count = rw_gear_sensor.get_count();
   interrupts();
 
   control_state.engine_rpm = 0;
-  if (engine_time_diff_us != 0) {
+  if (cur_engine_time_diff_us != 0) {
     control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
                                cur_engine_time_diff_us * US_PER_SECOND *
                                SECONDS_PER_MINUTE;
@@ -389,7 +394,7 @@ void debug_mode() {
   }
 
     control_state.engine_rpm = 0;
-  if (engine_time_diff_us != 0) {
+  if (cur_engine_time_diff_us != 0) {
     control_state.engine_rpm = ENGINE_SAMPLE_WINDOW / ENGINE_COUNTS_PER_ROT /
                                cur_engine_time_diff_us * US_PER_SECOND *
                                SECONDS_PER_MINUTE;
@@ -406,7 +411,7 @@ void debug_mode() {
 
   float gear_rpm = 0.0;
   float filt_gear_rpm = 0.0;
-  if (gear_time_diff_us != 0) {
+  if (cur_gear_time_diff_us != 0) {
     gear_rpm = GEAR_SAMPLE_WINDOW / GEAR_COUNTS_PER_ROT /
                cur_gear_time_diff_us * US_PER_SECOND * SECONDS_PER_MINUTE;
     filt_gear_rpm = gear_rpm_time_filter.update(gear_rpm);

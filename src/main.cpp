@@ -313,23 +313,5 @@ void loop() {
   // digitalWrite(LED_5_PIN, actuator.get_inbound_limit());
 
   // Flush SD card if buffer full
-  if (sd_initialized && !logging_disconnected) {
-    for (size_t buffer_num = 0; buffer_num < 2; buffer_num++) {
-      if (double_buffer[buffer_num].full) {
-        // Serial.printf("Info: Writing buffer %d to SD\n", buffer_num);
-        size_t num_bytes_written = log_file.write(
-            double_buffer[buffer_num].buffer, double_buffer[buffer_num].idx);
-        if (num_bytes_written == 0) {
-          logging_disconnected = true;
-          digitalWrite(LED_1_PIN, HIGH);
-        } else {
-          log_file.flush();
-          double_buffer[buffer_num].full = false;
-          double_buffer[buffer_num].idx = 0;
-        }
-      }
-    }
-  } else {
-    digitalWrite(LED_1_PIN, HIGH);
-  }
+  logger_flush();
 }
