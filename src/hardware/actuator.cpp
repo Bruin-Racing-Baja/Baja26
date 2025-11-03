@@ -1,7 +1,7 @@
-#include <actuator.h>
+#include <hardware/actuator.h>
 #include <constants.h>
 #include <macros.h>
-#include <odrive.h>
+#include <hardware/odrive.h>
 #include <types.h>
 
 /**
