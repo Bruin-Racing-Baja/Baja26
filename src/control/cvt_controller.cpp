@@ -472,7 +472,7 @@ void CvtController::updateNormal() {
     // Serialize control state
     size_t message_length = LOG.encode_pb_message(
         LOG.message_buffer(), MESSAGE_BUFFER_SIZE, PROTO_CONTROL_FUNCTION_MESSAGE_ID,
-        &ControlFunctionState_msg, &control_state_);
+        ControlFunctionState_fields, &control_state_);
 
     // Write to double buffer
     u8 write_status = LOG.write_to_double_buffer(

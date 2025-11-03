@@ -299,7 +299,7 @@ void setup() {
 
   size_t message_length = logger.encode_pb_message(
       logger.message_buffer(), MESSAGE_BUFFER_SIZE, PROTO_HEADER_MESSAGE_ID,
-      &OperationHeader_msg, &operation_header);
+      OperationHeader_fields, &operation_header);
   logger.write_to_double_buffer(logger.message_buffer(), message_length, false);
   logger.logger_flush();
 
