@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <constants.h>
-#include <odrive.h>
+#include <hardware/odrive.h>
 #include <types.h>
 
 class Ecenterlock {
@@ -57,6 +57,9 @@ public:
   float get_prev_position() { return prev_position; }
   u8 get_num_tries() { return num_tries; }
 
+  // Control function - this is the state machine
+  void control_update(float gear_rpm, float left_wheel_rpm, float right_wheel_rpm);
+
   u8 cycles_since_stopped; 
 
 private:
@@ -70,7 +73,7 @@ private:
   bool engage; 
   bool disengage; 
   u8 num_tries; 
-
+  int cycles_to_wait_for_vel;
 };
 
 #endif
