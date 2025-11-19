@@ -26,7 +26,7 @@ u8 Ecenterlock::home(u32 timeout_ms) {
   float start_time = millis(); 
   Serial.printf("Entering Homing Sequence\n"); 
 
-  if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
+  if (!odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL)) {
     return HOME_CAN_ERROR;
   }
 
@@ -62,13 +62,13 @@ u8 Ecenterlock::set_velocity(float velocity) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
-                                  ODrive::INPUT_MODE_VEL_RAMP) != 0) {
+  if (!odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
+                                  ODrive::INPUT_MODE_VEL_RAMP)) {
     return SET_VELOCITY_CAN_ERROR;
   }
 
   velocity = CLAMP(velocity, -ODRIVE_VEL_LIMIT, ODRIVE_VEL_LIMIT);
-  if (odrive->set_input_vel(velocity, 0) != 0) {
+  if (!odrive->set_input_vel(velocity, 0)) {
     return SET_VELOCITY_CAN_ERROR;
   }
 
@@ -82,12 +82,12 @@ u8 Ecenterlock::set_torque(float torque) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  if (odrive->set_controller_mode(ODrive::CONTROL_MODE_TORQUE_CONTROL, ODrive::INPUT_MODE_TORQUE_RAMP) != 0) {
+  if (!odrive->set_controller_mode(ODrive::CONTROL_MODE_TORQUE_CONTROL, ODrive::INPUT_MODE_TORQUE_RAMP)) {
     return SET_TORQUE_CAN_ERROR; 
   }
 
   torque = CLAMP(torque, -ODRIVE_TORQUE_LIMIT, ODRIVE_TORQUE_LIMIT); 
-  if (odrive->set_input_torque(torque) != 0) {
+  if (!odrive->set_input_torque(torque)) {
     return SET_TORQUE_CAN_ERROR; 
   }
 

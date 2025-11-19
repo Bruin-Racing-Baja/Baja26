@@ -56,7 +56,7 @@ constexpr float ODRIVE_ECENT_CURRENT_SOFT_MAX = 20.0; // A          // TODO: Che
 constexpr float ODRIVE_TORQUE_LIMIT = 0.1; // Nm 
 
 //Ecenterlock 
-constexpr u8 ECENTERLOCK_ODRIVE_NODE_ID = 0x7; 
+constexpr u8 ECENTERLOCK_ODRIVE_NODE_ID = 0x2; 
 
 constexpr float ECENTERLOCK_PITCH_MM = 2.54; // mm / rot
 constexpr float ECENTERLOCK_PITCH_CM = ECENTERLOCK_PITCH_MM / 10.0; // cm / rot
@@ -226,6 +226,10 @@ constexpr u8 ECENTERLOCK_SWITCH_DISENGAGE = 24; // 24
 constexpr u8 ECENTERLOCK_SWITCH_LIGHT = 25; // TODO: Change to actual value
 
 constexpr u32 ECENTERLOCK_HOME_TIMEOUT = 5000; 
+
+  //CHANGE THIS
+constexpr u8 CAN_TX = 0; 
+constexpr u8 CAN_RX = 1;
 
 // Flexcan
 constexpr u32 FLEXCAN_BAUD_RATE = 250000;  

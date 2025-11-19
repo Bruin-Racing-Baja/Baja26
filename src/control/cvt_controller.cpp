@@ -12,7 +12,6 @@
 #include <hardware/odrive.h>
 #include <hardware/actuator.h>
 #include <hardware/ecenterlock.h>
-#include <hardware/can_bus.h>
 #include <hardware/sensors.h>
 #include <logging/logger.h>
 #include <control_function_state.pb.h>  // Nanopb: ControlFunctionState_* symbols
@@ -364,8 +363,8 @@ void CvtController::updateNormal() {
   control_state_.secondary_rpm = gear_rpm / GEAR_TO_SECONDARY_RATIO;
   control_state_.filtered_secondary_rpm =
       filt_gear_rpm / GEAR_TO_SECONDARY_RATIO;
-::send_command(static_cast<u32>(DASH_NODE_ID), 1u, false,
-               control_state_.filtered_secondary_rpm);  float wheel_mph = control_state_.filtered_secondary_rpm *
+
+  float wheel_mph = control_state_.filtered_secondary_rpm *
                     WHEEL_TO_SECONDARY_RATIO * WHEEL_MPH_PER_RPM;
 
   float d_secondary_rpm = (control_state_.filtered_secondary_rpm - last_secondary_rpm_) / dt_s;

@@ -22,7 +22,7 @@ u8 Actuator::init() { return 0; }
  */
 u8 Actuator::home_encoder(u32 timeout_ms) {
   // TODO: Add timeout
-  if (odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
+  if (!odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL)) {
     return HOME_CAN_ERROR;
   }
 
@@ -60,8 +60,8 @@ u8 Actuator::set_velocity(float velocity) {
     odrive->set_axis_state(ODrive::AXIS_STATE_CLOSED_LOOP_CONTROL);
   }
 
-  if (odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
-                                  ODrive::INPUT_MODE_VEL_RAMP) != 0) {
+  if (!odrive->set_controller_mode(ODrive::CONTROL_MODE_VELOCITY_CONTROL,
+                                  ODrive::INPUT_MODE_VEL_RAMP)) {
     return SET_VELOCITY_CAN_ERROR;
   }
 
@@ -76,7 +76,7 @@ u8 Actuator::set_velocity(float velocity) {
   }
 
   velocity = CLAMP(velocity, -ODRIVE_VEL_LIMIT, ODRIVE_VEL_LIMIT);
-  if (odrive->set_input_vel(velocity, 0) != 0) {
+  if (!odrive->set_input_vel(velocity, 0)) {
     return SET_VELOCITY_CAN_ERROR;
   }
 
@@ -108,12 +108,12 @@ u8 Actuator::set_position(float position) {
   // }
 
   // TODO: Check which input mode to use
-  if (odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
-                                  ODrive::INPUT_MODE_PASSTHROUGH) != 0) {
+  if (!odrive->set_controller_mode(ODrive::CONTROL_MODE_POSITION_CONTROL,
+                                  ODrive::INPUT_MODE_PASSTHROUGH)) {
     return SET_POSITION_CAN_ERROR;
   }
 
-  if (odrive->set_input_pos(position, 0, 0) != 0) {
+  if (!odrive->set_input_pos(position, 0, 0)) {
     return SET_POSITION_CAN_ERROR;
   }
 
