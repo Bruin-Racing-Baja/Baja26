@@ -2,9 +2,8 @@
 #define ODRIVE_H
 
 #include <Arduino.h>
-#include <FlexCAN_T4.h>
+#include <ESP32-TWAI-CAN.hpp>
 #include <types.h>
-
 /**
  * @brief This class provides methods to communicate with an ODrive over the CAN
  * bus.
@@ -82,20 +81,20 @@ public:
   const u16 TOTAL_CHARGE_USED_ID = 536;
   const u16 TOTAL_POWER_USED_ID = 537;
 
-  ODrive(FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus, u32 node_id);
+  ODrive(u32 node_id);
 
   u8 init(float current_softmax);
 
-  void parse_message(const CAN_message_t &msg);
+  void parse_message(const CanFrame &msg);
 
   // Requesters
-  u8 request_errors();
-  u8 request_iq();
-  u8 request_temperature();
-  u8 request_bus_voltage_current();
-  u8 request_nonstand_pos_rel();
-  u8 request_nonstand_charge_used();
-  u8 request_nonstand_power_used();
+  bool request_errors();
+  bool request_iq();
+  bool request_temperature();
+  bool request_bus_voltage_current();
+  bool request_nonstand_pos_rel();
+  bool request_nonstand_charge_used();
+  bool request_nonstand_power_used();
 
   // Getters
   u32 get_time_since_heartbeat_ms();
@@ -115,27 +114,25 @@ public:
   float get_total_power_used();
 
   // Commands
-  u8 reboot();
-  u8 clear_errors();
+  bool reboot();
+  bool clear_errors();
 
   // Setters
-  u8 set_axis_state(u32 axis_state);
-  u8 set_controller_mode(u32 control_mode, u32 input_mode);
-  u8 set_input_pos(float input_pos, i16 vel_ff, i16 torque_ff);
-  u8 set_input_vel(float input_vel, float torque_ff);
-  u8 set_input_torque(float input_torque);
-  u8 set_limits(float vel_limit, float current_soft_max);
-  u8 set_traj_vel_limit(float traj_vel_limit);
-  u8 set_traj_accel_limits(float traj_accel_limit, float traj_decel_limit);
-  u8 set_traj_intertia(float traj_inertia);
-  u8 set_absolute_position(float pos_estimate);
-  u8 set_pos_gain(float pos_gain);
-  u8 set_vel_gains(float vel_gain, float vel_integrator_gain);
+  bool set_axis_state(u32 axis_state);
+  bool set_controller_mode(u32 control_mode, u32 input_mode);
+  bool set_input_pos(float input_pos, i16 vel_ff, i16 torque_ff);
+  bool set_input_vel(float input_vel, float torque_ff);
+  bool set_input_torque(float input_torque);
+  bool set_limits(float vel_limit, float current_soft_max);
+  bool set_traj_vel_limit(float traj_vel_limit);
+  bool set_traj_accel_limits(float traj_accel_limit, float traj_decel_limit);
+  bool set_traj_intertia(float traj_inertia);
+  bool set_absolute_position(float pos_estimate);
+  bool set_pos_gain(float pos_gain);
+  bool set_vel_gains(float vel_gain, float vel_integrator_gain);
 
 
 private:
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> *flexcan_bus;
-
   u32 node_id;
 
   u32 last_heartbeat_ms;
@@ -151,7 +148,7 @@ private:
   float pos_rel; 
   float total_charge_used, total_power_used;
 
-  u8 send_command(u32 cmd_id, bool remote, u8 buf[8]);
-  u8 send_empty_command(u32 cmd_id, bool remote);
+  bool send_command(u32 cmd_id, bool remote, u8 buf[8]);
+  bool send_empty_command(u32 cmd_id, bool remote);
 };
 #endif

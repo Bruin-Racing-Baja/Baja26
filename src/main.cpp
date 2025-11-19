@@ -1,9 +1,6 @@
-#include "core_pins.h"
 #include <Arduino.h>
-#include <FlexCAN_T4.h>
 
 #include <hardware/actuator.h>
-#include <hardware/can_bus.h>
 #include <hardware/ecenterlock.h>
 #include <hardware/odrive.h>
 #include <hardware/sensors.h>
@@ -54,13 +51,11 @@ bool serial_logging    = true;
 /*==============================================================================
 |                                 Globals
 ==============================================================================*/
-// Timers / Buses
-IntervalTimer timer;
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> flexcan_bus;
+
 
 // Devices
-ODrive odrive(&flexcan_bus, ODRIVE_NODE_ID);
-ODrive ecenterlock_odrive(&flexcan_bus, ECENTERLOCK_ODRIVE_NODE_ID);
+ODrive odrive(ODRIVE_NODE_ID);
+ODrive ecenterlock_odrive(ECENTERLOCK_ODRIVE_NODE_ID);
 Actuator actuator(&odrive);
 Ecenterlock ecenterlock(&ecenterlock_odrive);
 CvtController controller;
@@ -95,8 +90,6 @@ bool sd_initialized = false;
 // UI state
 bool last_button_state[5] = {HIGH, HIGH, HIGH, HIGH, HIGH};
 
-// CAN owner
-static CanBus CAN(flexcan_bus, odrive, ecenterlock_odrive);
 
 // Logger singleton
 static Logger& logger = Logger::instance();
@@ -104,7 +97,6 @@ static Logger& logger = Logger::instance();
 /*==============================================================================
 |                         Helpers / Free Functions
 ==============================================================================*/
-time_t get_teensy3_time() { return Teensy3Clock.get(); }
 
 inline void write_all_leds(u8 state) {
   digitalWrite(LED_1_PIN, state);
@@ -114,6 +106,32 @@ inline void write_all_leds(u8 state) {
   digitalWrite(LED_5_PIN, state);
 }
 
+void canTask(void *pvParameters) {
+    CanFrame msg;
+    for (;;) {
+        while (ESP32Can.readFrame(msg, 0)) {
+            u32 parsed_node_id = (msg.identifier >> 5) & 0x3F;
+            if (parsed_node_id == ODRIVE_NODE_ID) {
+              odrive.parse_message(msg);
+            } else if (parsed_node_id == ECENTERLOCK_ODRIVE_NODE_ID) {
+              ecenterlock_odrive.parse_message(msg);
+            }
+        }
+        vTaskDelay(1); // yield to other tasks
+    }
+}
+
+void controlTask(void *pvParameters)
+{
+  const TickType_t interval = pdMS_TO_TICKS(10);
+  TickType_t lastWakeTime = xTaskGetTickCount();
+
+  for (;;) {
+      CvtController::CvtController::isrTrampoline();
+      vTaskDelayUntil(&lastWakeTime, 10); // maintains constant period
+    
+  }
+}
 /*==============================================================================
 |                                   setup()
 ==============================================================================*/
@@ -162,47 +180,6 @@ void setup() {
   }
   write_all_leds(LOW);
 
-  /* --------------------------------- RTC ---------------------------------- */
-  setSyncProvider(get_teensy3_time);
-  bool rtc_set = (timeStatus() == timeSet) && (year() > 2021);
-  if (!rtc_set) {
-    Serial.println("Warning: Failed to sync time with RTC");
-  }
-
-  /* ---------------------------------- SD ---------------------------------- */
-  sd_initialized = SD.sdfs.begin(SdioConfig(DMA_SDIO));
-  if (!sd_initialized) {
-    Serial.println("Warning: SD failed to initialize");
-  } else {
-    char log_name[64];
-    u16  log_name_length = 0;
-
-    if (rtc_set) {
-      log_name_length = snprintf(
-          log_name, sizeof(log_name), "log_%04d-%02d-%02d_%02d-%02d-%02d.bin",
-          year(), month(), day(), hour(), minute(), second());
-    } else {
-      strncpy(log_name, "log_unknown_time.bin", sizeof(log_name));
-      log_name_length = 20;
-    }
-
-    if (SD.exists(log_name)) {
-      char log_name_duplicate[64];
-      for (int log_num = 0; log_num < 1000; log_num++) {
-        snprintf(log_name_duplicate, sizeof(log_name_duplicate),
-                 "%.*s_%03d.bin", log_name_length - 4, log_name, log_num);
-        if (!SD.exists(log_name_duplicate)) {
-          break;
-        }
-      }
-      strncpy(log_name, log_name_duplicate, sizeof(log_name));
-      log_name[sizeof(log_name) - 1] = '\0';
-    }
-
-    Serial.printf("Info: Logging to %s\n", log_name);
-    logger.logger_init(log_name);
-  }
-
   /* ---------------------------- Sensors + ISRs ----------------------------- */
   sensors_init(&engine_rpm_rotation_filter);
 
@@ -219,9 +196,13 @@ void setup() {
   attachInterrupt(LIMIT_SWITCH_IN_PIN,     on_inbound_limit_switch,   FALLING);
 
   /* ---------------------------------- CAN --------------------------------- */
-  CanBus::bind(&CAN);
-  CAN.begin();
+  twai_filter_config_t filter;
+  filter.acceptance_code = (0x2 << 5);   // shift left 5 bits
+  filter.acceptance_mask = 0x7E0 ^ 0x1; // ignore the last bit           // mask bits 5–10
 
+  if(!ESP32Can.begin(TWAI_SPEED_500KBPS, CAN_TX, CAN_RX, 16, 64, &filter))
+    Serial.println("Can bus failed");
+  xTaskCreate(canTask, "CAN RX Task", 4096, NULL, 5, NULL);
   if (wait_for_can_ecvt) {
     u32 led_flash_time_ms = 100;
     while (odrive.get_time_since_heartbeat_ms() > 100) {
@@ -280,11 +261,6 @@ void setup() {
     }
   }
 
-  /* ------------------------------ Interrupt prio --------------------------- */
-  // TODO: Figure out proper ISR priority levels
-  NVIC_SET_PRIORITY(IRQ_GPIO6789, 16);
-  timer.priority(255);
-
   /* ------------------------------ Header log ------------------------------- */
   OperationHeader operation_header;
 
@@ -313,7 +289,7 @@ void setup() {
     default:                          controller.setMode(CvtController::Mode::Normal);      break;
   }
 
-  timer.begin(CvtController::isrTrampoline, CONTROL_FUNCTION_INTERVAL_MS * 1e3);
+  xTaskCreate(controlTask, "controlTask", 4096, NULL, 4, NULL);
 }
 
 /*==============================================================================
